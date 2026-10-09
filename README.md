@@ -24,6 +24,34 @@
 | 🎬 **Mod demo** | Agent simulasi — sesuai untuk rakam video/reels tanpa perlu Claude berjalan. |
 | 🔒 **Lokal & selamat** | Hanya baca transcript (read-only), server bind ke `127.0.0.1` sahaja. Tiada data keluar dari komputer anda. |
 
+## 😄 Ekspresi, emosi & animasi / Emotions & animations
+
+Setiap agent ialah watak **chibi** dengan muka yang berubah ikut keadaan:
+
+| Emosi | Bila | Kesan |
+|---|---|---|
+| 😤 Fokus | Sedang edit / run code | Kening turun, menaip laju, zarah kod naik dari papan kekunci |
+| 🤔 Berfikir | Thinking | Mata ke atas, bubble `?` |
+| 🧐 Ingin tahu | Read / Search web | Mata ke bawah, progress bar |
+| 😰 Risau | Perlukan kebenaran / kerja terlalu banyak | Titis peluh, bubble kuning `NEED YOU!`, tangan melambai |
+| 😠 Kecewa | Tool gagal | Tanda marah merah, `OOPS!` |
+| 😄 Gembira | Tugasan siap | Mata `^ ^`, pipi merah, confetti, `DONE!` |
+| 🤩 Teruja | Tugasan baru / pekerja baru | `GOT IT!`, `NEW HIRE!` |
+| 😴 Mengantuk | Rehat di sofa / bean bag | `z z z` terapung |
+
+**🔥 Overload → kebakaran:** jika agent buat **13+ tool call dalam 20 saat**, dia mula berpeluh, kemudian **komputernya terbakar** (api, asap, cahaya oren). Rakan sekerja yang sedang rehat akan datang dengan **alat pemadam api** — atau jika semua sibuk, **Bomba (Fire Marshal)** bertopi merah masuk dari pintu, sembur buih, `ALL CLEAR!` → `THANKS!` + confetti. Semua direkod dalam log aktiviti.
+
+**👥 Kolaborasi:** anak panah animasi `ASSIGN TASK` dari agent ke sub-agent, dan `REPORT` bila sub-agent siap.
+
+## 🧊 Mod 3D
+
+Klik **3D** di topbar. Pejabat yang sama dalam 3D (three.js, sudah disertakan dalam `public/vendor/` — berfungsi offline):
+
+- Seret untuk putar, scroll untuk zoom, klik watak untuk pilih
+- **⟳ Orbit** — kamera berputar perlahan (sesuai untuk rakam video), **⌂ Reset** — kembali ke pandangan asal
+- Skrin monitor, papan Kanban, logo, api & asap, muka watak — semuanya live
+- Buka terus dalam 3D: `http://127.0.0.1:4317/#3d`
+
 ## 👔 Jawatan / Job roles
 
 Pejabat ada **12 meja, satu untuk setiap jawatan**. Setiap jawatan ada aksesori watak, prop meja dan skrin monitor sendiri:
@@ -129,13 +157,14 @@ lib/state.js         Model agent & status, heuristik
 lib/watcher.js       Tail transcript JSONL (read-only)
 bin/hook.js          Penghantar hook Claude Code
 bin/install-hooks.js Pasang/buang hooks
-public/              Front-end: roles.js (jawatan), sprites.js (watak prosedural), world.js (peta, pathfinding, render), app.js (panel), demo.js
+public/              Front-end: roles.js (jawatan), sprites.js (watak chibi + emosi), world.js (2D), world3d.js (3D) (peta, pathfinding, render), app.js (panel), demo.js
 test/                node --test
 ```
 
 ## 🎨 Ubah suai / Customise
 
-- **Logo anda sendiri** — letak fail `public/logo.png` (PNG lutsinar, nisbah lebar ~3:1, contoh 54×15 px atau lebih besar). Ia menggantikan papan tanda pixel SNAPSENSE di dinding secara automatik (mod live & demo). Tanpa fail itu, papan tanda kamera pixel terbina digunakan.
+- **Logo** — `public/logo.png` (logo SnapSense, PNG lutsinar). Ganti dengan logo anda sendiri; ia dipaparkan pada papan tanda dinding (2D & 3D) dan topbar. Padam fail itu untuk guna papan tanda kamera pixel terbina.
+- **Ambang kebakaran** — `FIRE_AT`, `LOAD_WINDOW` dalam `public/world.js`
 - **Jawatan** — `ROLES` dalam `public/roles.js` (label, warna, kata kunci, aksesori, prop, skrin)
 - **Nama watak** — `NAMES` dalam `public/sprites.js`
 - **Warna baju/rambut** — `SHIRT`, `HAIR`, `SKIN` dalam `public/sprites.js`

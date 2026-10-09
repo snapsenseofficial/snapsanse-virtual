@@ -171,5 +171,39 @@
     if (soundOn) chime();
   });
 
+  // ---- 2D / 3D view -------------------------------------------------------------
+  async function setView(mode) {
+    const is3d = mode === '3d';
+    $('view2d').setAttribute('aria-pressed', !is3d);
+    $('view3d').setAttribute('aria-pressed', is3d);
+    $('spin').hidden = $('resetcam').hidden = !is3d;
+    $('office').hidden = is3d;
+    $('stage3d').hidden = !is3d;
+    PO.world.set2D(!is3d);
+    try { localStorage.setItem('po-view', mode); } catch (_) { /* storage blocked */ }
+    if (!is3d) { PO.view3d.hide(); return; }
+    $('msg3d').hidden = false; $('msg3d').textContent = 'Building 3D office…';
+    try {
+      await PO.view3d.show($('stage3d'));
+      $('msg3d').hidden = true;
+    } catch (e) {
+      $('msg3d').textContent = '3D could not load (three.js missing). Showing 2D.';
+      setTimeout(() => { $('msg3d').hidden = true; }, 3000);
+      setView('2d');
+    }
+  }
+  $('view2d').addEventListener('click', () => setView('2d'));
+  $('view3d').addEventListener('click', () => setView('3d'));
+  $('resetcam').addEventListener('click', () => PO.view3d.resetView());
+  $('spin').addEventListener('click', () => {
+    const on = $('spin').getAttribute('aria-pressed') !== 'true';
+    $('spin').setAttribute('aria-pressed', on);
+    PO.view3d.setAutoRotate(on);
+  });
+  let savedView = '2d';
+  try { savedView = localStorage.getItem('po-view') || (location.hash === '#3d' ? '3d' : '2d'); } catch (_) { /* ignore */ }
+  if (location.hash === '#3d') savedView = '3d';
+  if (savedView === '3d') setView('3d');
+
   setInterval(renderPanel, 5000);
 })(window.PO = window.PO || {});

@@ -14,6 +14,11 @@
     <div class="brand"><img id="brand-logo" src="logo.png" alt="SnapSense" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>SNAPSENSE</span><em>PIXEL OFFICE</em></div>
     <div class="stats" id="stats"></div>
     <div class="actions">
+      <div class="seg" role="group" aria-label="View">
+        <button id="view2d" class="btn" aria-pressed="true">2D</button><button id="view3d" class="btn" aria-pressed="false">3D</button>
+      </div>
+      <button id="spin" class="btn" hidden aria-pressed="false" title="Slowly orbit the camera (great for recording)">⟳ Orbit</button>
+      <button id="resetcam" class="btn" hidden title="Back to the default camera">⌂ Reset</button>
       <button id="sound" class="btn" aria-pressed="false" title="Chime when an agent needs your approval">🔕 Sound off</button>
       <span id="conn" class="conn">● connecting…</span>
     </div>
@@ -21,6 +26,8 @@
   <main class="layout">
     <section class="stage" aria-label="Office floor">
       <canvas id="office"></canvas>
+      <div id="stage3d" hidden></div>
+      <p id="msg3d" class="msg3d" hidden></p>
     </section>
     <aside class="panel">
       <h2>Agents</h2>
@@ -32,6 +39,7 @@
   <script src="sprites.js"></script>
   <script src="roles.js"></script>
   <script src="world.js"></script>
+  <script src="world3d.js"></script>
   <script src="demo.js"></script>
   <script src="app.js"></script>
 </body>

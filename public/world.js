@@ -930,6 +930,7 @@
   low.width = W; low.height = H;
   const g = low.getContext('2d');
   let canvas, out, scale = 2, last = performance.now();
+  let active2D = true;
 
   function frame(nowMs) {
     const dt = Math.min(0.1, (nowMs - last) / 1000);
@@ -939,7 +940,7 @@
     updateFires(t);
     workParticles(t);
     updateParticles(dt);
-    draw(t);
+    if (active2D) draw(t);
     requestAnimationFrame(frame);
   }
 
@@ -1186,6 +1187,15 @@
   PO.world = {
     init, upsert, remove, reset, select, setLogo, emote, noteTool,
     onEvent: (cb) => { onEvent = cb; },
+    set2D(on) { active2D = on; },
+    // shared with the 3D view (world3d.js)
+    internals: {
+      T, COLS, ROWS, W, H, WORK, desks, sims, plants, BEANBAGS, DOOR, bg, logoImg,
+      get logoReady() { return logoReady; },
+      get hoverId() { return hoverId; },
+      drawScreen, deskStatus, drawWindow, drawWhiteboard, drawNeon, drawClock, drawBrandSign,
+      moodFor, armsFor, bubbleFor,
+    },
     look: (id) => (sims.get(id) ? sims.get(id).look : lookFor(id)),
     get selected() { return selectedId; },
   };
