@@ -8,6 +8,7 @@
   let THREE, renderer, scene, camera, controls, container, clock;
   let built = false, active = false, loading = null, shownOnce = false;
   const I = () => PO.world.internals;
+  const shade = (c, a) => PO.sprites.shade(c, a);
   const chars = new Map(); // sim id -> rig
   const deskViews = [];
   let wall, wallCtx, wallTex, wallAt = 0, ring, fireLight, sun, hemi;
@@ -86,11 +87,13 @@
     scene.add(fireLight);
 
     // floor = the 2D floor art (rugs, desk mats, emblem)
-    const fc = canvas(416 * 2, 224 * 2);
+    const B = I().BG_RES;
+    const fc = canvas(416 * 3, 224 * 3);
     const fg = fc.getContext('2d');
-    fg.imageSmoothingEnabled = false;
-    fg.drawImage(bg, 0, 32, 416, 224, 0, 0, fc.width, fc.height);
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 14), new THREE.MeshStandardMaterial({ map: pixelTexture(fc), roughness: 0.95 }));
+    fg.drawImage(bg, 0, 32 * B, 416 * B, 224 * B, 0, 0, fc.width, fc.height);
+    const floorTex = new THREE.CanvasTexture(fc);
+    floorTex.anisotropy = 4;
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(26, 14), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.9 }));
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(13, 0, 9);
     floor.receiveShadow = true;
@@ -100,7 +103,7 @@
     const WS = 4;
     const wc = canvas(416 * WS, 32 * WS);
     wallCtx = wc.getContext('2d');
-    wallTex = pixelTexture(wc);
+    wallTex = new THREE.CanvasTexture(wc);
     wall = new THREE.Mesh(new THREE.PlaneGeometry(26, 2), new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.95 }));
     wall.position.set(13, 1, 2);
     wall.receiveShadow = true;
@@ -160,12 +163,12 @@
   function buildDesk(d) {
     const g = new THREE.Group();
     const x0 = d.tx, z0 = d.ty;
-    box(1.9, 0.06, 0.62, '#b98455', x0 + 1, 0.74, z0 + 0.62, g);
-    box(1.9, 0.5, 0.05, '#8f5f37', x0 + 1, 0.46, z0 + 0.92, g);
-    [[0.12, 0.36], [1.88, 0.36]].forEach(([dx, dz]) => box(0.06, 0.72, 0.06, '#6e4a2c', x0 + dx, 0.36, z0 + dz, g));
+    box(1.9, 0.06, 0.62, '#d6c4a5', x0 + 1, 0.74, z0 + 0.62, g);
+    box(1.9, 0.5, 0.05, '#ad9b7d', x0 + 1, 0.46, z0 + 0.92, g);
+    [[0.12, 0.36], [1.88, 0.36]].forEach(([dx, dz]) => box(0.06, 0.72, 0.06, '#26282e', x0 + dx, 0.36, z0 + dz, g));
     box(0.5, 0.04, 0.03, d.role.color, x0 + 1.5, 0.6, z0 + 0.95, g); // nameplate
-    box(0.07, 1.25, 1.2, '#4f6d8f', x0 + 2.02, 0.63, z0 + 0.35, g); // cubicle partition
-    box(0.09, 0.06, 1.22, '#7a9cc0', x0 + 2.02, 1.27, z0 + 0.35, g);
+    box(0.07, 1.25, 1.2, '#2b2e36', x0 + 2.02, 0.63, z0 + 0.35, g); // cubicle partition
+    box(0.09, 0.06, 1.22, '#4a4e58', x0 + 2.02, 1.27, z0 + 0.35, g);
     // monitor + live screen
     box(0.9, 0.62, 0.05, '#2a2d35', x0 + 0.8, 1.13, z0 + 0.48, g);
     box(0.08, 0.3, 0.05, '#2a2d35', x0 + 0.8, 0.9, z0 + 0.5, g);
@@ -175,11 +178,18 @@
     const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.53), new THREE.MeshBasicMaterial({ map: tex }));
     screen.position.set(x0 + 0.8, 1.13, z0 + 0.51);
     g.add(screen);
-    box(0.62, 0.02, 0.16, '#e3e6ea', x0 + 1.48, 0.78, z0 + 0.72, g); // keyboard
+    const m = PO.mascots.forRole(d.role.id) || {};
+    if (m.device === 'laptop') {
+      // laptop in front of the agent instead of a monitor: we see the lid
+      g.children.slice(-4).forEach((o) => { o.visible = false; });
+      box(0.62, 0.02, 0.42, '#a2a7b1', x0 + 1.5, 0.78, z0 + 0.62, g);
+      const lid = box(0.62, 0.42, 0.02, '#c3c7cf', x0 + 1.5, 0.98, z0 + 0.82, g); lid.rotation.x = 0.25;
+      box(0.1, 0.1, 0.005, m.color || '#e93d82', x0 + 1.32, 1.04, z0 + 0.86, g);
+    } else box(0.62, 0.02, 0.16, '#e3e6ea', x0 + 1.48, 0.78, z0 + 0.72, g); // keyboard
     buildProp(d.role, x0, z0, g);
     // chair behind the agent
-    box(0.5, 0.07, 0.48, '#3b3f4a', x0 + 1.5, 0.46, z0 - 0.02, g);
-    box(0.5, 0.55, 0.07, '#3b3f4a', x0 + 1.5, 0.78, z0 - 0.27, g);
+    box(0.5, 0.07, 0.48, '#1f2026', x0 + 1.5, 0.46, z0 - 0.02, g);
+    box(0.5, 0.55, 0.07, '#1f2026', x0 + 1.5, 0.78, z0 - 0.27, g);
     box(0.5, 0.08, 0.075, d.role.color, x0 + 1.5, 1.02, z0 - 0.27, g);
     cyl(0.04, 0.04, 0.4, '#2a2d35', x0 + 1.5, 0.22, z0 - 0.02, g);
     // flames (hidden until the desk catches fire)
@@ -275,10 +285,10 @@
     for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2; const l = cyl(0.015, 0.015, 1.1, '#5d6580', 20.5 + Math.cos(a) * 0.12, 0.52, 7.5 + Math.sin(a) * 0.12, g); l.rotation.z = Math.cos(a) * 0.12; }
     box(0.28, 0.2, 0.2, '#1d1d24', 20.5, 1.12, 7.5, g);
     // sofa + table
-    box(4, 0.4, 0.85, '#a8455a', 21, 0.2, 9.55, g); box(4, 0.7, 0.2, '#7b2d3b', 21, 0.55, 9.1, g);
-    box(0.2, 0.55, 0.85, '#7b2d3b', 18.95, 0.28, 9.55, g); box(0.2, 0.55, 0.85, '#7b2d3b', 23.05, 0.28, 9.55, g);
+    box(4, 0.4, 0.85, '#3a4870', 21, 0.2, 9.55, g); box(4, 0.7, 0.2, '#26304a', 21, 0.55, 9.1, g);
+    box(0.2, 0.55, 0.85, '#26304a', 18.95, 0.28, 9.55, g); box(0.2, 0.55, 0.85, '#26304a', 23.05, 0.28, 9.55, g);
     box(1.8, 0.07, 0.6, '#a0683c', 21, 0.42, 11.5, g);
-    [[20.2, 11.3], [21.8, 11.3], [20.2, 11.7], [21.8, 11.7]].forEach(([x, z]) => box(0.05, 0.4, 0.05, '#6e4a2c', x, 0.2, z, g));
+    [[20.2, 11.3], [21.8, 11.3], [20.2, 11.7], [21.8, 11.7]].forEach(([x, z]) => box(0.05, 0.4, 0.05, '#26282e', x, 0.2, z, g));
     box(0.18, 0.02, 0.12, '#3e8ef7', 21.2, 0.47, 11.5, g);
     // bean bags
     BEANBAGS.forEach(([x, y, c]) => { const b = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 10), mat(c)); b.scale.y = 0.55; b.position.set(x + 0.5, 0.22, y + 0.5); b.castShadow = true; b.receiveShadow = true; g.add(b); });
@@ -286,33 +296,46 @@
   }
 
   // ---- characters ------------------------------------------------------------------
+  function sphere(r, color, x, y, z, parent, sx = 1, sy = 1, sz = 1) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 18), mat(color, { roughness: 0.6 }));
+    m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; m.receiveShadow = true;
+    if (parent) parent.add(m);
+    return m;
+  }
+
+  // Cartoon mascot: round head with a painted face, sprout, hoodie, baggy pants, sneakers.
   function buildChar(s) {
     const L = s.look;
     const root = new THREE.Group();
     root.userData.simId = s.id;
     const body = new THREE.Group(); root.add(body);
-    box(0.36, 0.32, 0.24, L.shirt, 0, 0.5, 0, body);
-    const head = new THREE.Group(); head.position.set(0, 0.88, 0); body.add(head);
-    box(0.5, 0.45, 0.45, L.skin, 0, 0, 0, head);
-    box(0.54, 0.14, 0.49, L.hair, 0, 0.22, 0, head);
-    box(0.54, L.style === 1 ? 0.62 : 0.38, 0.07, L.hair, 0, L.style === 1 ? -0.08 : 0.05, -0.23, head);
-    box(0.05, 0.3, 0.47, L.hair, -0.265, 0.07, 0, head); box(0.05, 0.3, 0.47, L.hair, 0.265, 0.07, 0, head);
-    if (L.style === 2) for (let i = -1; i <= 1; i++) box(0.1, 0.1, 0.1, L.hair, i * 0.17, 0.32, 0, head);
-    if (L.style === 3) box(0.18, 0.16, 0.16, L.hair, 0, 0.32, -0.12, head);
-    const fc = canvas(14, 12);
-    const faceTex = pixelTexture(fc);
-    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.39), new THREE.MeshBasicMaterial({ map: faceTex }));
-    face.position.set(0, -0.02, 0.226); head.add(face);
-    const limb = (x, y, w, h, d, color, hand) => {
+    cyl(0.19, 0.22, 0.36, L.hoodie, 0, 0.52, 0, body, 18);                 // hoodie
+    sphere(0.13, L.hoodieDark, 0, 0.7, -0.03, body, 1.3, 0.45, 1);          // hood collar
+    const head = new THREE.Group(); head.position.set(0, 0.98, 0); body.add(head);
+    sphere(0.29, L.skin, 0, 0, 0, head, 1.08, 1, 1);
+    if (L.hairLong) { sphere(0.3, L.hair, 0, -0.06, -0.06, head, 1.12, 1.1, 0.95); }
+    // sprout(s)
+    const sprout = (x, dir) => {
+      const st = cyl(0.025, 0.03, 0.14, L.skin, x, 0.33, 0, head, 8); st.rotation.z = -dir * 0.35;
+      sphere(0.05, L.skin, x + dir * 0.06, 0.4, 0, head);
+    };
+    if (L.gender === 'girl') { sprout(-0.1, -1); sprout(0.1, 1); } else sprout(0.02, 1);
+    // painted face
+    const fc = canvas(128, 128);
+    const faceTex = new THREE.CanvasTexture(fc);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.5), new THREE.MeshBasicMaterial({ map: faceTex, transparent: true }));
+    face.position.set(0, 0.05, 0.275); head.add(face);
+    const limb = (x, y, r1, r2, h, color, end, endColor) => {
       const pivot = new THREE.Group(); pivot.position.set(x, y, 0); body.add(pivot);
-      box(w, h, d, color, 0, -h / 2, 0, pivot);
-      if (hand) box(w, 0.06, d, hand, 0, -h - 0.03, 0, pivot);
+      cyl(r1, r2, h, color, 0, -h / 2, 0, pivot, 12);
+      if (end === 'hand') sphere(0.05, endColor, 0, -h - 0.02, 0, pivot);
+      if (end === 'shoe') sphere(0.085, '#f6f6f4', 0, -h - 0.02, 0.05, pivot, 1, 0.6, 1.5);
       return pivot;
     };
-    const armL = limb(-0.24, 0.64, 0.1, 0.28, 0.12, L.shirtDark, L.skin);
-    const armR = limb(0.24, 0.64, 0.1, 0.28, 0.12, L.shirtDark, L.skin);
-    const legL = limb(-0.09, 0.34, 0.13, 0.3, 0.15, L.pants, '#22222a');
-    const legR = limb(0.09, 0.34, 0.13, 0.3, 0.15, L.pants, '#22222a');
+    const armL = limb(-0.24, 0.66, 0.05, 0.055, 0.28, L.hoodieDark, 'hand', L.skin);
+    const armR = limb(0.24, 0.66, 0.05, 0.055, 0.28, L.hoodieDark, 'hand', L.skin);
+    const legL = limb(-0.1, 0.36, 0.08, 0.09, 0.3, L.pants, 'shoe');
+    const legR = limb(0.1, 0.36, 0.08, 0.09, 0.3, L.pants, 'shoe');
     accessory3d(L, head, body);
     const ext = new THREE.Group(); // fire extinguisher
     cyl(0.07, 0.07, 0.3, '#e5484d', 0, -0.32, 0.08, ext); box(0.04, 0.06, 0.04, '#1d1d24', 0, -0.14, 0.08, ext);
@@ -324,19 +347,33 @@
   }
 
   function accessory3d(L, head, body) {
-    const c = L.roleColor || '#888';
-    switch (L.accessory) {
-      case 'beret': { const b = cyl(0.3, 0.3, 0.08, '#1d1d24', 0.03, 0.31, 0, head, 16); b.rotation.z = -0.15; break; }
-      case 'beanie': box(0.56, 0.2, 0.51, c, 0, 0.27, 0, head); box(0.1, 0.1, 0.1, '#f0f0f0', 0, 0.42, 0, head); break;
-      case 'cap': box(0.56, 0.16, 0.51, c, 0, 0.27, 0, head); box(0.5, 0.04, 0.2, c, 0, 0.2, 0.32, head); break;
-      case 'helmet': box(0.58, 0.2, 0.53, '#e5484d', 0, 0.28, 0, head); box(0.66, 0.04, 0.62, '#b42318', 0, 0.18, 0, head); box(0.1, 0.12, 0.02, '#f5d000', 0, 0.28, 0.27, head); break;
-      case 'headphones': box(0.6, 0.05, 0.08, '#1d1d24', 0, 0.3, 0, head); box(0.08, 0.16, 0.16, c, -0.3, 0, 0, head); box(0.08, 0.16, 0.16, c, 0.3, 0, 0, head); break;
-      case 'camera': box(0.16, 0.11, 0.08, '#1d1d24', 0, 0.48, 0.15, body); break;
-      case 'tie': box(0.06, 0.22, 0.02, c, 0, 0.52, 0.125, body); break;
-      case 'hoodie': box(0.34, 0.12, 0.1, L.shirtDark, 0, 0.66, -0.14, body); break;
-      case 'phone': case 'clipboard': break;
-      default:
+    const h = L.hat;
+    if (h && (h.type === 'cap' || h.type === 'helmet')) {
+      const col = h.type === 'helmet' ? '#e5484d' : h.color;
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.31, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat(col));
+      dome.position.set(0, 0.06, 0); dome.scale.set(1.06, 0.8, 1); dome.castShadow = true; head.add(dome);
+      const brim = cyl(0.2, 0.2, 0.025, shade(col, -0.12), 0, 0.07, 0.26, head, 20); brim.scale.set(1.2, 1, 0.8);
+      if (h.type === 'helmet') box(0.06, 0.2, 0.3, '#f5d000', 0, 0.2, 0.05, head);
+      else box(0.08, 0.05, 0.01, h.logo || '#1d1d24', 0, 0.17, 0.27, head);
+    } else if (h && h.type === 'beanie') {
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.315, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), mat(h.color));
+      dome.position.set(0, 0.02, 0); dome.scale.set(1.06, 0.9, 1); head.add(dome);
+      cyl(0.315, 0.315, 0.09, shade(h.color, 0.08), 0, 0.04, 0, head, 24).scale.set(1.06, 1, 1);
+    } else if (h && h.type === 'grad') {
+      box(0.6, 0.03, 0.6, '#1d1d24', 0, 0.3, 0, head); cyl(0.2, 0.22, 0.12, '#2a2d35', 0, 0.23, 0, head, 16);
+      box(0.02, 0.18, 0.02, '#f5b83d', 0.25, 0.22, 0.2, head);
     }
+    if (L.headphones) {
+      const band = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.025, 8, 24, Math.PI), mat(L.headphones));
+      band.position.set(0, 0.02, 0); head.add(band);
+      sphere(0.08, L.headphones, -0.31, -0.02, 0, head, 0.6, 1, 1); sphere(0.08, L.headphones, 0.31, -0.02, 0, head, 0.6, 1, 1);
+    }
+    if (L.neckphones) { const band = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.02, 6, 20), mat(L.neckphones)); band.rotation.x = Math.PI / 2; band.position.set(0, 0.72, 0.02); body.add(band); }
+    if (L.sunglasses) { box(0.16, 0.06, 0.02, '#111114', -0.1, 0.2, 0.25, head); box(0.16, 0.06, 0.02, '#111114', 0.1, 0.2, 0.25, head); }
+    if (L.bow) { sphere(0.05, L.bow, 0.16, 0.25, 0.1, head, 1.4, 0.8, 0.6); sphere(0.05, L.bow, 0.26, 0.25, 0.08, head, 1.4, 0.8, 0.6); }
+    if (L.backpack) box(0.3, 0.32, 0.14, '#25262c', 0, 0.52, -0.24, body);
+    if (L.item === 'camera') box(0.14, 0.1, 0.06, '#1d1d24', 0, 0.55, 0.22, body);
+    if (L.track) box(0.02, 0.34, 0.01, '#f4f4f4', 0, 0.52, 0.215, body);
   }
 
   // Canvas-texture sprite for name tags and speech bubbles.
@@ -356,17 +393,17 @@
     lbl.key = key;
     const g = lbl.ctx;
     g.clearRect(0, 0, 512, 128);
-    g.font = '28px "Press Start 2P", monospace';
+    g.font = '800 40px "Nunito", system-ui, sans-serif';
     const nw = g.measureText(s.look.name).width;
-    g.font = '40px "VT323", monospace';
+    g.font = '700 30px "Nunito", system-ui, sans-serif';
     const rw = g.measureText(role.short).width;
     const w = Math.max(nw, rw) + 36, x = 256 - w / 2;
     g.fillStyle = 'rgba(15,17,26,0.85)'; g.fillRect(x, 14, w, 100);
     g.fillStyle = role.color; g.fillRect(x, 14, w, 6);
     g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillStyle = selected ? '#ffe08a' : '#ffffff';
-    g.font = '28px "Press Start 2P", monospace'; g.fillText(s.look.name, 256, 48);
-    g.fillStyle = role.color; g.font = '40px "VT323", monospace'; g.fillText(role.short, 256, 90);
+    g.font = '800 40px "Nunito", system-ui, sans-serif'; g.fillText(s.look.name, 256, 46);
+    g.fillStyle = role.color; g.font = '700 30px "Nunito", system-ui, sans-serif'; g.fillText(role.short, 256, 88);
     lbl.tex.needsUpdate = true;
     lbl.sprite.scale.set(2.2, 0.55, 1);
   }
@@ -378,7 +415,7 @@
     if (!text) return;
     const g = b.ctx;
     g.clearRect(0, 0, 512, 128);
-    g.font = '30px "Press Start 2P", monospace';
+    g.font = '800 40px "Nunito", system-ui, sans-serif';
     const w = Math.min(480, g.measureText(text).width + 44), x = 256 - w / 2;
     const warn = text === 'NEED YOU!' || text === 'OOPS!' || text === 'FIRE!!';
     g.fillStyle = '#1d1d24'; g.fillRect(x - 5, 9, w + 10, 80); g.fillRect(238, 89, 36, 16); g.fillRect(250, 105, 12, 10);
@@ -430,7 +467,7 @@
       const mood = moodFor(s, t);
       const blink = ((t + s.blinkAt) % 4) < 0.15;
       const fk = mood + blink;
-      if (fk !== c.faceKey) { c.faceKey = fk; PO.sprites.drawFaceTile(c.faceCtx, s.look, mood, blink); c.faceTex.needsUpdate = true; }
+      if (fk !== c.faceKey) { c.faceKey = fk; PO.toon.drawFaceTexture(c.faceCtx, 128, s.look, mood, blink ? 1 : 0, t); c.faceTex.needsUpdate = true; }
       c.head.rotation.z = mood === 'thinking' ? 0.12 : mood === 'sleepy' ? Math.sin(t) * 0.08 : 0;
       // labels
       const selected = s.id === sel;
@@ -487,21 +524,16 @@
   function syncWall(t) {
     if (t - wallAt < 0.25) return;
     wallAt = t;
-    const { bg, drawWindow, drawWhiteboard, drawNeon, drawClock, drawBrandSign, sims, logoImg, logoReady, T } = I();
+    const W3 = I();
+    const SC = PO.scene, T = W3.T, B = W3.BG_RES;
     const g = wallCtx, now = new Date();
     g.setTransform(4, 0, 0, 4, 0, 0);
-    g.imageSmoothingEnabled = false;
-    g.drawImage(bg, 0, 0, 416, 32, 0, 0, 416, 32);
-    drawWindow(g, 4 * T, t, now); drawWindow(g, 12 * T, t, now);
-    drawWhiteboard(g, 7 * T, sims); drawNeon(g, 20 * T + 4, t); drawClock(g, 2 * T + 8, 14, now);
-    drawBrandSign(g, 14 * T + 2, t);
-    if (logoReady) {
-      const x = 14 * T + 5, y = 7, w = 52, h = 11;
-      const k = Math.min(w / logoImg.naturalWidth, h / logoImg.naturalHeight);
-      g.imageSmoothingEnabled = true;
-      g.drawImage(logoImg, x + (w - logoImg.naturalWidth * k) / 2, y + (h - logoImg.naturalHeight * k) / 2, logoImg.naturalWidth * k, logoImg.naturalHeight * k);
-    }
+    g.drawImage(W3.bg, 0, 0, 416 * B, 32 * B, 0, 0, 416, 32);
+    SC.drawWindow(g, 4 * T, t, now); SC.drawWindow(g, 12 * T, t, now);
+    SC.drawWhiteboard(g, 7 * T, W3.sims, W3.tasksDone, W3.WORK); SC.drawNeon(g, 20 * T + 4, t); SC.drawClock(g, 104, 14, now);
+    SC.drawBrandSign(g, 14 * T + 2, t, W3.logoReady ? W3.logoImg : null);
     g.setTransform(1, 0, 0, 1, 0, 0);
+    W3.drawWallText(g, 4, 'wall');
     wallTex.needsUpdate = true;
     // day / night
     const hr = now.getHours(), night = hr < 6 || hr >= 20;

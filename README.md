@@ -1,10 +1,12 @@
-# 🏢 SnapSense Pixel Office
+# 🏢 SnapSense Virtual Office
 
-**Pejabat maya pixel-art untuk agent Claude Code anda.** Setiap sesi Claude Code jadi seorang "pekerja" pixel yang duduk di meja, menaip kod, membaca fail, menjalankan terminal, berehat di sofa — dan angkat tangan bila perlukan kebenaran anda.
+**Pejabat maya animasi untuk agent Claude Code anda.** Setiap sesi Claude Code jadi seorang ahli pasukan SnapSense — watak kartun dengan nama, jawatan, perangai dan emosi sendiri — yang duduk di meja, bekerja, bersembang, ketawa, stress, jatuh cinta, tertidur… dan angkat tangan bila perlukan kebenaran anda.
 
-*A live pixel-art virtual office for your Claude Code agents. Open source, zero dependencies, runs locally.*
+*A live animated virtual office for your Claude Code agents. Open source, zero dependencies, runs locally.*
 
-![SnapSense Pixel Office](docs/screenshot.png)
+![SnapSense Virtual Office](docs/screenshot.png)
+
+![3D](docs/screenshot-3d.png)
 
 ---
 
@@ -13,20 +15,44 @@
 | | |
 |---|---|
 | 👔 **12 jawatan kreatif** | Creative Director, Marketing, Designer, Photographer, Videographer, Video Editor, Content Creator, Social Media, Copywriter, Web Dev dan lain-lain — setiap satu dengan meja, aksesori & skrin sendiri. |
-| 🧑‍💻 **Satu sesi = satu watak** | Setiap sesi `claude` dapat watak pixel unik (rambut, kulit, baju dijana dari ID sesi). |
+| 🧑‍💻 **Satu sesi = satu ahli pasukan** | Setiap sesi `claude` dimainkan oleh seorang watak kartun SnapSense ikut jawatannya. |
 | 🖥️ **Skrin monitor hidup** | Kod berwarna bila `Edit/Write`, terminal hijau bila `Bash`, dokumen bila `Read/Grep`, browser bila `WebSearch`. |
 | ✋ **"Perlukan anda!"** | Bila Claude tunggu kebenaran, watak angkat tangan, skrin berkelip kuning, kad di panel berdenyut + bunyi chime (pilihan). |
 | 👥 **Sub-agent** | Bila Claude guna `Task`/`Agent`, seorang "intern" masuk pejabat, duduk berdekatan, dan keluar bila siap. |
 | ☕ **Rehat** | Agent yang idle pergi ke mesin kopi, sofa, rak buku, mesin arcade atau tingkap. |
 | 📋 **Papan Kanban** | Whiteboard di dinding tunjuk sticky note setiap agent: Bekerja / Tunggu / Idle. |
-| 📸 **Papan tanda SnapSense** | Logo kamera pixel di dinding (flash berkelip!) dan emblem pada karpet lounge — atau guna logo anda sendiri. |
+| 📸 **Papan tanda SnapSense** | Logo SnapSense di dinding (flash kamera berkelip!) dan emblem pada karpet lounge — atau guna logo anda sendiri. |
 | 🌗 **Siang & malam** | Tingkap & jam dinding ikut waktu sebenar anda. |
 | 🎬 **Mod demo** | Agent simulasi — sesuai untuk rakam video/reels tanpa perlu Claude berjalan. |
 | 🔒 **Lokal & selamat** | Hanya baca transcript (read-only), server bind ke `127.0.0.1` sahaja. Tiada data keluar dari komputer anda. |
 
+## 👥 Pasukan / The crew
+
+12 watak maskot, setiap seorang satu jawatan & satu meja (susunan ikut gambar pasukan):
+
+| Nama | Jawatan | Perangai | Bila stress |
+|---|---|---|---|
+| **Danial** | Video Editor | chill, introvert, suka kopi & gaming | *"Jangan stress, slow2 je bro"* — mengantuk, cari kopi |
+| **Lili** | Social Media | ceria, suka makan & selfie, overthinking | *"Overthink lagi..."* — sedih, lepas tu *"Jom makan!"* |
+| **Haziq** | Event & Project Planner | calm, suka nature & travel | *"Tarik nafas... okay"* |
+| **Sofea** | Content Creator | stylish, confident, kadang moody | *"Ugh, mood swing..."* — marah |
+| **Irfan** | Marketing | energetic, suka sukan & muzik, cepat bosan | *"Jom skate jap!"* |
+| **Mira** | Graphic Designer | tegas, fokus, protective | *"Siapa usik file aku?!"* |
+| **Farid** | Web Dev & Research | suka ilmu, detail, pemikir | *"Kenapa tak jalan..."* |
+| **Amir** | Photographer | happy go lucky, suka ketawa — tukang lawak pejabat | *"Rilek la, semua okay!"* |
+| **Zul** | Videographer & Sound | tenang, jarang bercakap | *"..."* |
+| **Aina** | Copywriter | sweet, penyayang, mudah tersentuh | *"Huhu... banyaknya kerja"* — menangis |
+| **Hafiz** | Strategy & Client | kompetitif, disiplin | *"Fokus. Deadline."* |
+| **Nadia** | HR & People | lembut, caring | datang **memujuk** rakan yang stress 💜 |
+
+- **Sub-agent** jadi *Mini-[nama ketua]* — intern bertopi graduasi.
+- **Danial ❤ Lili** — bila kedua-dua rehat, mereka duduk sebelah di sofa dengan mata hati.
+- **Amir** buat lawak, kawan berdekatan ketawa terbahak-bahak.
+- Rakan yang rehat bersembang sesama sendiri (bubble talk dalam Bahasa Melayu).
+
 ## 😄 Ekspresi, emosi & animasi / Emotions & animations
 
-Setiap agent ialah watak **chibi** dengan muka yang berubah ikut keadaan:
+Setiap agent ialah watak **kartun animasi** (vektor, licin — bukan pixel) dengan muka yang berubah ikut keadaan:
 
 | Emosi | Bila | Kesan |
 |---|---|---|
@@ -37,7 +63,10 @@ Setiap agent ialah watak **chibi** dengan muka yang berubah ikut keadaan:
 | 😠 Kecewa | Tool gagal | Tanda marah merah, `OOPS!` |
 | 😄 Gembira | Tugasan siap | Mata `^ ^`, pipi merah, confetti, `DONE!` |
 | 🤩 Teruja | Tugasan baru / pekerja baru | `GOT IT!`, `NEW HIRE!` |
-| 😴 Mengantuk | Rehat di sofa / bean bag | `z z z` terapung |
+| 😴 Mengantuk | Rehat di sofa / bean bag, kerja lewat malam | `z z z` terapung, kepala terangguk |
+| 😍 Bercinta | Danial & Lili, bila dipujuk | Mata hati, hati terapung |
+| 😂 Kelakar | Lawak Amir | Ketawa, air mata gembira |
+| 😢 Sedih / 😵 Stress | Kerja terlalu banyak | Air mata / awan conteng + menggigil |
 
 **🔥 Overload → kebakaran:** jika agent buat **13+ tool call dalam 20 saat**, dia mula berpeluh, kemudian **komputernya terbakar** (api, asap, cahaya oren). Rakan sekerja yang sedang rehat akan datang dengan **alat pemadam api** — atau jika semua sibuk, **Bomba (Fire Marshal)** bertopi merah masuk dari pintu, sembur buih, `ALL CLEAR!` → `THANKS!` + confetti. Semua direkod dalam log aktiviti.
 
@@ -45,7 +74,7 @@ Setiap agent ialah watak **chibi** dengan muka yang berubah ikut keadaan:
 
 ## 🧊 Mod 3D
 
-Klik **3D** di topbar. Pejabat yang sama dalam 3D (three.js, sudah disertakan dalam `public/vendor/` — berfungsi offline):
+Klik **3D** di topbar. Pejabat yang sama dalam 3D (three.js, sudah disertakan dalam `public/vendor/` — berfungsi offline). Dalam 2D pula: **scroll untuk zoom**, seret untuk pan, double-click watak untuk ikut dia.
 
 - Seret untuk putar, scroll untuk zoom, klik watak untuk pilih
 - **⟳ Orbit** — kamera berputar perlahan (sesuai untuk rakam video), **⌂ Reset** — kembali ke pandangan asal
@@ -104,7 +133,7 @@ Atau buka `public/index.html` terus dalam browser — ia auto masuk mod demo.
 
 ## ⚡ Hooks (pilihan, lebih tepat) / Optional hooks
 
-Secara default, Pixel Office membaca transcript Claude Code di `~/.claude/projects/` — tak perlu setup apa-apa. Untuk kemas kini **serta-merta** dan pengesanan **"perlukan kebenaran"** yang tepat, pasang hooks:
+Secara default, Virtual Office membaca transcript Claude Code di `~/.claude/projects/` — tak perlu setup apa-apa. Untuk kemas kini **serta-merta** dan pengesanan **"perlukan kebenaran"** yang tepat, pasang hooks:
 
 ```bash
 npm run hooks:install      # tambah hooks ke ~/.claude/settings.json (backup dibuat: settings.json.bak)
@@ -132,7 +161,7 @@ Jika guna port lain dengan hooks: `export PIXEL_OFFICE_PORT=5000`.
 
 ```
 Claude Code ──► ~/.claude/projects/**/*.jsonl ──► lib/watcher.js ─┐
-     │                                                             ├─► lib/state.js ──SSE──► browser (canvas pixel office)
+     │                                                             ├─► lib/state.js ──SSE──► browser (pejabat animasi 2D / 3D)
      └────────► hooks ──► bin/hook.js ──POST /hook ───────────────┘
 ```
 
@@ -157,24 +186,24 @@ lib/state.js         Model agent & status, heuristik
 lib/watcher.js       Tail transcript JSONL (read-only)
 bin/hook.js          Penghantar hook Claude Code
 bin/install-hooks.js Pasang/buang hooks
-public/              Front-end: roles.js (jawatan), sprites.js (watak chibi + emosi), world.js (2D), world3d.js (3D) (peta, pathfinding, render), app.js (panel), demo.js
+public/              Front-end: mascots.js (pasukan + dialog), roles.js (jawatan), toon.js (watak kartun + emosi),
+                     scene.js (pejabat ilustrasi), world.js (simulasi + 2D), world3d.js (3D) (peta, pathfinding, render), app.js (panel), demo.js
 test/                node --test
 ```
 
 ## 🎨 Ubah suai / Customise
 
-- **Logo** — `public/logo.png` (logo SnapSense, PNG lutsinar). Ganti dengan logo anda sendiri; ia dipaparkan pada papan tanda dinding (2D & 3D) dan topbar. Padam fail itu untuk guna papan tanda kamera pixel terbina.
+- **Logo** — `public/logo.png` (logo SnapSense, PNG lutsinar). Ganti dengan logo anda sendiri; ia dipaparkan pada papan tanda dinding (2D & 3D) dan topbar. Padam fail itu untuk papan tanda teks terbina.
 - **Ambang kebakaran** — `FIRE_AT`, `LOAD_WINDOW` dalam `public/world.js`
-- **Jawatan** — `ROLES` dalam `public/roles.js` (label, warna, kata kunci, aksesori, prop, skrin)
-- **Nama watak** — `NAMES` dalam `public/sprites.js`
-- **Warna baju/rambut** — `SHIRT`, `HAIR`, `SKIN` dalam `public/sprites.js`
+- **Watak** — `CREW` dalam `public/mascots.js` (nama, warna, pakaian, aksesori, perangai, ayat bubble talk)
+- **Jawatan** — `ROLES` dalam `public/roles.js` (label, kata kunci, prop meja, skrin)
 - **Susun atur pejabat** — `desks`, `plants`, `SPOTS` dalam `public/world.js` (grid 26×16, tile 16px)
 - **Teks bubble** — `BUBBLE` dalam `public/world.js`
 
 ## 🎬 Tip untuk content creator
 
 - `npm run demo`, besarkan browser ke full screen, rakam skrin → terus jadi B-roll "AI team saya sedang bekerja".
-- Kanvas guna integer scaling + `image-rendering: pixelated`, jadi kekal tajam bila rakam 4K.
+- Semua dilukis secara vektor, jadi kekal tajam bila zoom atau rakam 4K. Mod 3D + **⟳ Orbit** sesuai untuk shot sinematik.
 
 ## 🤝 Sumbangan / Contributing
 

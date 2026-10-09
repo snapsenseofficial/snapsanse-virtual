@@ -11,7 +11,7 @@
   };
   const KIND_ICON = {
     typing: '✎', reading: '📖', running: '▶', browsing: '🌐', planning: '☑', delegating: '👥',
-    waiting: '⚠', prompt: '💬', done: '✓', error: '✖', session: '🚪', thinking: '…', fire: '🔥', rescue: '🧯',
+    waiting: '⚠', prompt: '💬', done: '✓', error: '✖', session: '🚪', thinking: '…', fire: '🔥', rescue: '🧯', comfort: '💜',
   };
   const TOOL_KINDS = new Set(['typing', 'reading', 'running', 'browsing', 'planning', 'delegating']);
   let soundOn = false;
@@ -113,9 +113,11 @@
       const look = PO.world.look(a.id);
       const role = look.role || PO.roles.ASSISTANT;
       return `<button class="card ${a.status} ${a.parentId ? 'child' : ''} ${a.id === sel ? 'sel' : ''}" data-id="${esc(a.id)}">
-        <span class="avatar" style="--shirt:${look.shirt};--hair:${look.hair};--skin:${look.skin}"></span>
-        <span class="who"><b>${esc(look.name)}</b>${a.parentId ? ` <i>sub-agent</i>` : ''}
-          <span class="job" style="--role:${role.color}">${esc(role.label)} · ${esc(role.ms)}</span><small>${esc(a.project)}</small></span>
+        <img class="avatar" src="${portrait(look)}" alt="">
+        <span class="who"><b>${esc(look.name)}</b>${a.parentId ? ` <i>intern</i>` : ''}
+          <span class="job" style="--role:${role.color}">${esc(role.label)} · ${esc(role.ms)}</span>
+          <span class="traits">${(look.mascot ? look.mascot.traits.slice(0, 3) : []).map((x) => `<em>${esc(x)}</em>`).join('')}</span>
+          <small>${esc(a.project)}</small></span>
         <span class="pill">${STATUS_LABEL[a.status] || a.status}</span>
         <span class="detail">${esc(a.detail)}</span>
         <span class="meta">${a.toolCount} tools · ${ago(a.startedAt)}</span>
@@ -125,7 +127,7 @@
     $('log').innerHTML = log.slice(-60).reverse().map((e) => {
       const look = PO.world.look(e.agentId);
       const t = new Date(e.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      return `<li class="${e.kind}"><span class="t">${t}</span><span class="dot" style="background:${look.shirt}"></span>
+      return `<li class="${e.kind}"><span class="t">${t}</span><span class="dot" style="background:${look.skin}"></span>
         <span class="k">${KIND_ICON[e.kind] || '•'}</span><span class="x"><b>${esc(look.name)}</b> ${esc(e.text)}</span></li>`;
     }).join('');
 
@@ -135,7 +137,23 @@
     const tools = all.reduce((n, a) => n + (a.toolCount || 0), 0);
     $('stats').innerHTML = `<span><b>${all.length}</b> agents</span><span><b>${working}</b> working</span>` +
       `<span class="${waiting ? 'warn' : ''}"><b>${waiting}</b> need you</span><span><b>${tools}</b> tool calls</span>`;
-    document.title = waiting ? `(${waiting}) ⚠ Pixel Office` : 'SnapSense Pixel Office';
+    document.title = waiting ? `(${waiting}) ⚠ Virtual Office` : 'SnapSense Virtual Office';
+  }
+
+  // Pixel portrait of a crew member for the agent cards (cached per look).
+  const portraits = new Map();
+  function portrait(look) {
+    const key = look.name + look.skin;
+    if (portraits.has(key)) return portraits.get(key);
+    const c = document.createElement('canvas');
+    c.width = 80; c.height = 72;
+    const g = c.getContext('2d');
+    g.fillStyle = '#262b3f'; g.fillRect(0, 0, 80, 72);
+    g.scale(2.6, 2.6);
+    PO.toon.draw(g, 15.4, 38, look, { dir: 'down', pose: 'stand', mood: 'normal', t: 0 });
+    const url = c.toDataURL();
+    portraits.set(key, url);
+    return url;
   }
 
   function scrollToCard(id) {
@@ -143,6 +161,10 @@
     if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
+  $('agents').addEventListener('dblclick', (e) => {
+    const card = e.target.closest('.card');
+    if (card) PO.world.focus(card.dataset.id);
+  });
   $('agents').addEventListener('click', (e) => {
     const card = e.target.closest('.card');
     if (card) PO.world.select(card.dataset.id === PO.world.selected ? null : card.dataset.id);
@@ -178,6 +200,7 @@
     $('view3d').setAttribute('aria-pressed', is3d);
     $('spin').hidden = $('resetcam').hidden = !is3d;
     $('office').hidden = is3d;
+    $('zoom2d').hidden = is3d;
     $('stage3d').hidden = !is3d;
     PO.world.set2D(!is3d);
     try { localStorage.setItem('po-view', mode); } catch (_) { /* storage blocked */ }
@@ -192,6 +215,9 @@
       setView('2d');
     }
   }
+  $('zin').addEventListener('click', () => PO.world.zoomBy(1.3));
+  $('zout').addEventListener('click', () => PO.world.zoomBy(1 / 1.3));
+  $('zfit').addEventListener('click', () => PO.world.fit());
   $('view2d').addEventListener('click', () => setView('2d'));
   $('view3d').addEventListener('click', () => setView('3d'));
   $('resetcam').addEventListener('click', () => PO.view3d.resetView());

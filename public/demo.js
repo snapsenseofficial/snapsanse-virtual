@@ -5,19 +5,20 @@
 
   // One simulated agent per job role, each with its own project and briefs.
   const CREW = {
-    'creative-director': ['q4-campaign-concept', ['Draft three creative concepts for the Raya campaign', 'Review the brand moodboard and give feedback']],
-    'marketing-manager': ['ad-campaign', ['Build the October ads budget plan', 'Create a monthly analytics report for the client']],
-    'project-manager': ['studio-ops', ['Plan this week\'s shoot schedule', 'Update the project timeline for the wedding client']],
-    'account-manager': ['client-portal', ['Prepare a quotation for the corporate video package', 'Reply to client feedback on the brand video']],
-    'graphic-designer': ['brand-kit', ['Design 5 Instagram post templates', 'Export the new logo in all sizes']],
-    'photographer': ['photo-archive', ['Sort 300 RAW files by date and client', 'Optimise all portfolio images to WebP']],
-    'videographer': ['shoot-footage', ['Make a shot list for Saturday\'s event shoot', 'Organise drone footage into folders']],
     'video-editor': ['reels-editor', ['Cut a 30s reel from the event footage', 'Add Malay subtitles to the brand video']],
-    'content-creator': ['tiktok-content', ['Script 5 TikTok hooks for the photography package', 'Plan a behind-the-scenes vlog']],
     'social-media': ['instagram-social', ['Generate a content calendar for October', 'Write captions for this week\'s Instagram reels']],
+    'project-manager': ['event-planning', ['Plan the client launch event', 'Update the shoot schedule for next week']],
+    'content-creator': ['tiktok-content', ['Script 5 TikTok hooks for the OOTD series', 'Plan a behind-the-scenes vlog']],
+    'marketing-manager': ['ad-campaign', ['Build the October ads budget plan', 'Create a monthly analytics report for the client']],
+    'graphic-designer': ['brand-kit', ['Design 5 Instagram post templates', 'Export the new logo in all sizes']],
+    'web-developer': ['snapsense-web', ['Build a landing page for the photography package', 'Research booking widgets and add WhatsApp button']],
+    'photographer': ['photo-archive', ['Sort 300 RAW files by date and client', 'Optimise all portfolio images to WebP']],
+    'videographer': ['sound-production', ['Clean up the interview audio', 'Organise drone footage into folders']],
     'copywriter': ['blog-copy', ['Write a blog post: 10 tips for a wedding photoshoot', 'Write the newsletter headline options']],
-    'web-developer': ['snapsense-web', ['Build a landing page for the new photography package', 'Add a booking form with WhatsApp button']],
+    'account-manager': ['client-portal', ['Prepare a quotation for the corporate video package', 'Plan the Q4 client strategy meeting']],
+    'hr': ['team-people', ['Draft the onboarding checklist for new interns', 'Plan this month\'s team bonding']],
   };
+
   const FILES = ['index.html', 'Gallery.tsx', 'upload.ts', 'styles.css', 'booking.ts', 'report.md', 'captions.json', 'README.md'];
   const SCRIPT = [
     () => ['thinking', 'Thinking…', null],

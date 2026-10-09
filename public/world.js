@@ -12,34 +12,52 @@
   };
   const STATUS_MOOD = {
     typing: 'focused', running: 'focused', planning: 'focused', reading: 'curious', browsing: 'curious',
-    thinking: 'thinking', delegating: 'excited', waiting: 'worried', done: 'happy',
+    thinking: 'thinking', delegating: 'happy', waiting: 'embarrassed', done: 'joyful',
   };
   // One-off reactions to events (from the activity log).
   const EMOTES = {
-    hire: { mood: 'excited', text: 'NEW HIRE!', ms: 5000, arms: 'wave' },
-    prompt: { mood: 'excited', text: 'GOT IT!', ms: 2500 },
-    done: { mood: 'happy', text: 'DONE!', ms: 4000, arms: 'cheer' },
-    error: { mood: 'frustrated', text: 'OOPS!', ms: 4000 },
-    fire: { mood: 'surprised', text: 'FIRE!!', ms: 60000, arms: 'wave', sticky: true },
-    thanks: { mood: 'happy', text: 'THANKS!', ms: 3500, arms: 'cheer' },
+    hire: { mood: 'joyful', text: 'NEW HIRE!', ms: 5000, arms: 'wave' },
+    prompt: { mood: 'joyful', text: 'GOT IT!', ms: 2500 },
+    done: { mood: 'joyful', text: 'DONE!', ms: 4000, arms: 'cheer' },
+    error: { mood: 'angry', text: 'OOPS!', ms: 4000 },
+    fire: { mood: 'shocked', text: 'FIRE!!', ms: 60000, arms: 'wave', sticky: true },
+    thanks: { mood: 'love', text: 'THANKS!', ms: 3500, arms: 'cheer' },
     allclear: { mood: 'happy', text: 'ALL CLEAR!', ms: 3000, arms: 'cheer' },
     onmyway: { mood: 'focused', text: 'ON MY WAY!', ms: 3000 },
+    comforted: { mood: 'love', ms: 4000 },
   };
   // Workload: this many tool calls inside LOAD_WINDOW seconds sets the desk on fire.
   const LOAD_WINDOW = 20, STRESS_AT = 8, FIRE_AT = 13, FIRE_COOLDOWN = 180;
-  const FIRE_ROLE = { id: 'fire-marshal', verb: 'ON DUTY', label: 'Fire Marshal', short: 'Fire Marshal', ms: 'Bomba', color: '#e5484d', accessory: 'helmet' };
-  const { drawCharacter, shade, NAMES } = PO.sprites;
+  const FIRE_ROLE = { id: 'fire-marshal', verb: 'ON DUTY', label: 'Fire Marshal', short: 'Fire Marshal', ms: 'Bomba', tags: 'berani · cekap', color: '#e5484d' };
+  const { shade, mascotLook } = PO.sprites;
 
-  // Stable look per agent id, with a unique first name among everyone seen.
+  // Every agent is played by a crew mascot: its role's mascot, an intern
+  // version of its lead for sub-agents, or Bomba for the fire marshal.
   const looks = new Map();
   function lookFor(id) {
-    let look = looks.get(id);
-    if (look) return look;
-    look = PO.sprites.lookFor(id);
-    const live = new Set([...sims.values()].map((s) => s.look.name));
-    const start = NAMES.indexOf(look.name);
-    for (let i = 1; live.has(look.name) && i < NAMES.length; i++) look.name = NAMES[(start + i) % NAMES.length];
-    looks.set(id, look);
+    return looks.get(id) || PO.sprites.lookFor(id);
+  }
+
+  function castLook(agent) {
+    if (looks.has(agent.id)) return looks.get(agent.id);
+    let role, mascot;
+    if (agent.npc) { role = FIRE_ROLE; mascot = PO.mascots.FIRE; }
+    else if (agent.parentId) {
+      role = PO.roles.ASSISTANT;
+      const lead = looks.get(agent.parentId);
+      mascot = PO.mascots.intern(lead && lead.mascot, looks.size);
+    } else {
+      const taken = new Set([...sims.values()].filter((o) => !o.data.parentId && !o.data.npc).map((o) => o.look.role.id));
+      role = PO.roles.pick(agent, taken);
+      mascot = PO.mascots.forRole(role.id) || PO.mascots.CREW[0];
+    }
+    const look = mascotLook(mascot);
+    look.mascot = mascot;
+    look.role = role;
+    // a second agent in the same role gets a numbered twin
+    const same = [...looks.values()].filter((l) => l.mascot.id === mascot.id && [...sims.values()].some((s) => s.look === l)).length;
+    look.name = same ? `${mascot.name} ${same + 1}` : mascot.name;
+    looks.set(agent.id, look);
     return look;
   }
 
@@ -74,7 +92,9 @@
   block(19, 5, 4, 1);  // photo studio backdrop
   block(18, 6); block(23, 6); // softboxes
   block(20, 7);        // camera on tripod
-  const BEANBAGS = [[19, 12, '#f5b83d'], [22, 12, '#12a594']];
+  const BEANBAGS = [[19, 12, '#f5b83d'], [22, 12, '#9b6ad8']];
+  block(1, 9);          // "WORK HARD STAY COOL" chalk sign
+  block(11, 14, 2, 1);  // "Same team, different vibes" board
   BEANBAGS.forEach(([x, y]) => block(x, y));
 
   const tileFeet = (tx, ty) => ({ x: tx * T + 8, y: ty * T + 12 });
@@ -117,187 +137,41 @@
     return out;
   }
 
-  // ---- static background --------------------------------------------------------
-  const bg = document.createElement('canvas');
-  bg.width = W; bg.height = H;
-  (function paintBackground() {
-    const g = bg.getContext('2d');
-    const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
-    // wooden floor
-    for (let ty = 2; ty < ROWS - 1; ty++) {
-      for (let tx = 1; tx < COLS - 1; tx++) {
-        const X = tx * T, Y = ty * T;
-        for (let p = 0; p < 2; p++) {
-          const c = ((tx + ty * 3 + p) % 3 === 0) ? '#c49a72' : ((tx + p) % 2 ? '#cba37c' : '#c79f78');
-          r(X, Y + p * 8, T, 8, c);
-          r(X, Y + p * 8 + 7, T, 1, '#ab8059');
-          const seam = (tx * 5 + ty * 3 + p * 7) % 16;
-          r(X + seam, Y + p * 8, 1, 7, '#b48a63');
-        }
-      }
-    }
-    // role-coloured mats under every desk chair
-    for (const d of desks) {
-      const mx = d.x - 10, my = (d.ty - 1) * T + 2;
-      g.globalAlpha = 0.5;
-      r(mx, my, 20, 13, shade(d.role.color, -0.2));
-      r(mx + 1, my + 1, 18, 11, d.role.color);
-      g.globalAlpha = 1;
-    }
-    // lounge rug
-    r(18 * T + 4, 8 * T + 2, 6 * T - 8, 6 * T - 6, '#3d5674');
-    r(18 * T + 6, 8 * T + 4, 6 * T - 12, 6 * T - 10, '#4f6d8f');
-    for (let y = 8 * T + 8; y < 14 * T - 6; y += 6) for (let x = 18 * T + 10; x < 24 * T - 8; x += 6) r(x, y, 2, 2, '#5d7ea3');
-    // SnapSense camera emblem woven into the rug
-    {
-      const ex = 21 * T - 2, ey = 13 * T - 6;
-      r(ex + 2, ey, 4, 1, '#f5b83d'); r(ex, ey + 1, 14, 7, '#f5b83d');
-      r(ex + 4, ey + 2, 6, 5, '#3d5674'); r(ex + 5, ey + 3, 4, 3, '#f5b83d'); r(ex + 6, ey + 4, 2, 1, '#3d5674');
-      r(ex + 11, ey + 2, 2, 1, '#3d5674');
-    }
-    // exposed brick wall
-    r(0, 0, W, 32, '#8f3f2d');
-    for (let row = 0; row < 7; row++) {
-      const y = 3 + row * 4;
-      for (let x = -(row % 2) * 4; x < W; x += 8) {
-        const k = (x * 7 + row * 13) % 5;
-        r(x, y, 7, 3, ['#b5543c', '#a84a35', '#bf5f45', '#ad4f39', '#c46a4f'][k]);
-      }
-    }
-    r(0, 0, W, 3, '#3b2c1f');
-    r(0, 29, W, 3, '#3b2c1f');
-    // gallery wall: framed photos between windows and whiteboard
-    [[98, 6], [178, 8], [17, 7]].forEach(([fx, fy], i) => {
-      r(fx, fy, 12, 14, '#1d1d24'); r(fx + 1, fy + 1, 10, 12, '#fafafa');
-      const sky = ['#7cc4ea', '#f2a76b', '#3a3c6e'][i], land = ['#30a46c', '#8a4b2a', '#f5b83d'][i];
-      r(fx + 2, fy + 2, 8, 6, sky); r(fx + 2, fy + 8, 8, 3, land); r(fx + 6, fy + 3, 2, 2, '#fff6c9');
-    });
-    // side + bottom walls
-    r(0, 32, T, H - 32, '#6b5442'); r(T - 3, 32, 3, H - 32, '#57432f');
-    r(W - T, 32, T, H - 32, '#6b5442'); r(W - T, 32, 3, H - 32, '#57432f');
-    r(0, H - T, W, T, '#6b5442'); r(0, H - T, W, 3, '#57432f');
-    // door
-    r(0, DOOR.ty * T, T, T, '#cba37c');
-    r(0, DOOR.ty * T - 3, T, 3, '#3b2c1f');
-    r(2, DOOR.ty * T + 2, 10, 12, '#8d3b3b');
-    r(3, DOOR.ty * T + 3, 8, 10, '#a64b4b');
-  })();
-
-  // ---- dynamic decor ------------------------------------------------------------
-  function skyColor(h) {
-    if (h < 5 || h >= 21) return ['#141a33', '#1f2850', true];
-    if (h < 7) return ['#f2a76b', '#f6cfa0', false];
-    if (h < 17) return ['#7cc4ea', '#b6e1f5', false];
-    if (h < 19) return ['#e9895c', '#f4c08f', false];
-    return ['#3a3c6e', '#6d5a8c', true];
-  }
-
-  function drawWindow(g, x, t, now) {
-    const [top, bottom, night] = skyColor(now.getHours());
-    g.fillStyle = '#5b4636'; g.fillRect(x, 4, 32, 21);
-    g.fillStyle = top; g.fillRect(x + 2, 6, 28, 8);
-    g.fillStyle = bottom; g.fillRect(x + 2, 14, 28, 9);
-    if (night) {
-      g.fillStyle = '#fff6c9';
-      [[5, 8], [17, 10], [24, 7], [10, 16]].forEach(([sx, sy]) => g.fillRect(x + sx, sy, 1, 1));
-      g.fillRect(x + 22, 15, 3, 3);
-    } else {
-      const cx = x + 2 + Math.floor((t * 2 + x) % 34) - 6;
-      g.fillStyle = 'rgba(255,255,255,0.9)';
-      g.save(); g.beginPath(); g.rect(x + 2, 6, 28, 17); g.clip();
-      g.fillRect(cx, 10, 8, 2); g.fillRect(cx + 2, 9, 4, 1);
-      g.restore();
-    }
-    g.fillStyle = '#5b4636'; g.fillRect(x + 15, 6, 2, 17); g.fillRect(x + 2, 14, 28, 1);
-    g.fillStyle = '#e6d6bd'; g.fillRect(x - 1, 25, 34, 2);
-  }
-
   // ---- SnapSense brand ---------------------------------------------------------
   // Drop a logo at public/logo.png to replace the built-in pixel sign.
-  const FONT = {
-    S: ['###', '#..', '###', '..#', '###'], N: ['#..#', '##.#', '#.##', '#..#', '#..#'],
-    A: ['.#.', '#.#', '###', '#.#', '#.#'], P: ['##.', '#.#', '##.', '#..', '#..'],
-    E: ['###', '#..', '##.', '#..', '###'],
-  };
   const logoImg = new Image();
   let logoReady = false;
   logoImg.onload = () => { logoReady = logoImg.naturalWidth > 0; };
   function setLogo(url) { if (url && logoImg.src !== url) logoImg.src = url; }
 
-  function pixelText(g, text, x, y, color) {
-    g.fillStyle = color;
-    for (const ch of text) {
-      (FONT[ch] || []).forEach((row, j) => {
-        for (let i = 0; i < row.length; i++) if (row[i] === '#') g.fillRect(x + i, y + j, 1, 1);
-      });
-      x += (FONT[ch] ? FONT[ch][0].length : 3) + 1;
-    }
-    return x;
-  }
-
-  function drawCamera(g, x, y, flash) {
-    g.fillStyle = '#e6e8ef'; g.fillRect(x + 2, y, 3, 1); g.fillRect(x, y + 1, 11, 6);
-    g.fillStyle = '#9aa4b2'; g.fillRect(x, y + 6, 11, 1);
-    g.fillStyle = '#2a2d35'; g.fillRect(x + 3, y + 2, 5, 4); g.fillRect(x + 4, y + 1, 3, 6);
-    g.fillStyle = '#79c0ff'; g.fillRect(x + 4, y + 3, 3, 2);
-    g.fillStyle = '#ffffff'; g.fillRect(x + 4, y + 3, 1, 1);
-    g.fillStyle = flash ? '#fff6c9' : '#f5b83d'; g.fillRect(x + 9, y + 2, 1, 1);
-  }
-
-  // Backlit wall sign; the camera flash fires every few seconds.
-  let signRect = null;
-  function drawBrandSign(g, x, t) {
-    const w = 58, y = 4, h = 19;
-    const flash = (t % 7) < 0.12;
-    g.fillStyle = '#3b2c1f'; g.fillRect(x, y, w, h);
-    g.fillStyle = '#1d2131'; g.fillRect(x + 1, y + 1, w - 2, h - 2);
-    g.fillStyle = 'rgba(245,184,61,0.25)'; g.fillRect(x - 1, y + h, w + 2, 1);
-    if (logoReady) {
-      // the logo itself is drawn crisp at screen resolution in drawOverlay
-      signRect = { x: x + 3, y: y + 3, w: w - 6, h: h - 6 };
-      g.fillStyle = '#f5b83d'; g.fillRect(x + 3, y + h - 4, w - 6, 1);
-      return false;
-    }
-    signRect = null;
-    drawCamera(g, x + 4, y + 6, flash);
-    const tx = pixelText(g, 'SNAP', x + 18, y + 7, '#f5b83d');
-    pixelText(g, 'SENSE', tx, y + 7, '#e6e8ef');
-    g.fillStyle = '#f5b83d'; g.fillRect(x + 18, y + 14, 37, 1);
-    return flash;
-  }
-
-  function drawClock(g, cx, cy, now) {
-    g.fillStyle = '#3b2c1f'; g.fillRect(cx - 6, cy - 5, 12, 10); g.fillRect(cx - 5, cy - 6, 10, 12);
-    g.fillStyle = '#fbf7ee'; g.fillRect(cx - 5, cy - 4, 10, 8); g.fillRect(cx - 4, cy - 5, 8, 10);
-    const hand = (ang, len, c) => {
-      g.fillStyle = c;
-      for (let i = 0; i <= len; i++) g.fillRect(Math.round(cx + Math.sin(ang) * i) - (i ? 0 : 0), Math.round(cy - Math.cos(ang) * i), 1, 1);
+  // "To Do" whiteboard: boxes get ticked as the team finishes tasks; sticky notes per agent.
+  let tasksDone = 0;
+  const TODO = ['Content', 'Design', 'Edit', 'Meeting', 'Create', 'Grow'];
+  // Handwritten text on the chalkboards, whiteboard and signs, drawn at
+  // screen resolution (S = pixels per logical pixel) for both 2D and 3D.
+  function drawWallText(g, S, region = 'all') {
+    const hand = (size) => `${Math.round(size * S)}px "Caveat", "Patrick Hand", cursive`;
+    const txt = (s, x, y, size, color, align = 'center') => {
+      g.font = hand(size); g.fillStyle = color; g.textAlign = align; g.textBaseline = 'middle';
+      g.fillText(s, x * S, y * S);
     };
-    const h = now.getHours() % 12, m = now.getMinutes();
-    hand(((h + m / 60) / 12) * Math.PI * 2, 2.5, '#222');
-    hand((m / 60) * Math.PI * 2, 4, '#444');
-    g.fillStyle = '#e5484d'; g.fillRect(cx, cy, 1, 1);
-  }
-
-  // Kanban board: sticky notes per agent, by status column
-  function drawWhiteboard(g, x, sims) {
-    g.fillStyle = '#8a8f98'; g.fillRect(x, 3, 64, 23);
-    g.fillStyle = '#fbfbf8'; g.fillRect(x + 1, 4, 62, 20);
-    g.fillStyle = '#b9bec7'; g.fillRect(x + 4, 26, 56, 2);
-    const cols = [['#30a46c', (s) => WORK.has(s) && s !== 'waiting'], ['#f5b83d', (s) => s === 'waiting'], ['#9aa4b2', (s) => !WORK.has(s)]];
-    cols.forEach(([c, test], i) => {
-      const cx = x + 3 + i * 20;
-      g.fillStyle = c; g.fillRect(cx, 6, 18, 2);
-      let n = 0;
-      for (const s of sims.values()) {
-        if (s.leaving || s.data.npc || !test(s.data.status)) continue;
-        if (n >= 8) break;
-        const nx = cx + (n % 3) * 6, ny = 10 + Math.floor(n / 3) * 5;
-        g.fillStyle = s.look.shirt; g.fillRect(nx, ny, 5, 4);
-        g.fillStyle = shade(s.look.shirt, -0.2); g.fillRect(nx, ny + 3, 5, 1);
-        n++;
-      }
-    });
+    g.save();
+    // chalkboard
+    txt('Better Ideas', 32, 10.5, 7, '#f1f1ec');
+    txt('Bigger Dreams ☺', 32, 17.5, 7, '#f1f1ec');
+    // To Do whiteboard
+    txt('To Do:', 116, 7, 5.5, '#2a2d35', 'left');
+    TODO.forEach((label, i) => txt(label, 7 * T + 8.5 + Math.floor(i / 3) * 24, 11.5 + (i % 3) * 5, 4.6, '#2a2d35', 'left'));
+    // coffee bar chalk menu
+    txt('Good Food', 21 * T + 24, 8.5, 5, '#f1f1ec');
+    txt('Good Mood ☺', 21 * T + 24, 14, 5, '#f5b83d');
+    if (region === 'all') {
+      // floor signs
+      ['WORK', 'HARD', 'STAY', 'COOL'].forEach((w, i) => txt(w, 24, 141 + i * 4.6, 4.4, '#f1f1ec'));
+      txt('Same team', 192, 220, 5.2, '#f1f1ec');
+      txt('Different vibes ♡', 192, 226.5, 5.2, '#f5b83d');
+    }
+    g.restore();
   }
 
   // ---- furniture drawables ------------------------------------------------------
@@ -418,218 +292,6 @@
     return st === 'typing' && d.role.screen && owner.look.role === d.role ? d.role.screen : st;
   }
 
-  function drawDesk(g, d, t, owner) {
-    const X = d.tx * T, Y = d.ty * T;
-    const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(X + x, Y + y, w, h); };
-    // cubicle partition on the right
-    r(31, -12, 3, 27, '#3d5674'); r(31, -12, 3, 1, '#7a9cc0'); r(32, -11, 1, 25, '#4f6d8f');
-    // desk body
-    r(2, 12, 2, 4, '#6e4a2c'); r(27, 12, 2, 4, '#6e4a2c');
-    r(0, 3, 31, 10, '#b98455'); r(0, 3, 31, 1, '#d29d6c'); r(0, 12, 31, 2, '#8f5f37');
-    // monitor (left), facing the viewer
-    r(5, -8, 15, 11, '#2a2d35'); r(11, 3, 3, 2, '#2a2d35'); r(9, 4, 7, 1, '#2a2d35');
-    const st = deskStatus(d);
-    drawScreen(g, X + 6, Y - 7, st, t, d.tx + d.ty);
-    if (st && st !== 'idle') { g.fillStyle = 'rgba(160,200,255,0.10)'; g.fillRect(X + 2, Y - 10, 22, 16); }
-    // keyboard + hands of whoever sits here
-    r(18, 7, 11, 2, '#e3e6ea'); r(18, 8, 11, 1, '#b8bec7');
-    if (owner && owner.atTarget && owner.pose === 'sitDesk') {
-      const typing = ['typing', 'running', 'planning'].includes(owner.data.status);
-      const k = typing ? Math.floor(t * 9) % 2 : 0;
-      r(19, 6 - k, 2, 2, owner.look.skin); r(26, 5 + k, 2, 2, owner.look.skin);
-    }
-    drawProp(r, d.role, t, !!owner && owner.atTarget && !owner.leaving);
-    // nameplate in the role colour
-    r(19, 10, 9, 2, d.role.color); r(20, 10, 7, 1, shade(d.role.color, 0.25));
-    if (st === 'running' || st === 'browsing') { // progress bar above the monitor
-      const k = Math.floor((t * 4) % 12);
-      r(6, -11, 13, 3, '#1d1d24'); r(7, -10, k, 1, st === 'running' ? '#3fb950' : '#58a6ff');
-    }
-    if (d.fire) drawFire(g, d, t);
-  }
-
-  // Desk props per job role, on the left of the desk (tall ones stand beside it).
-  function drawProp(r, role, t, busy) {
-    const D = '#1d1d24';
-    switch (role.prop) {
-      case 'trophy': r(0, 0, 5, 3, '#f5b83d'); r(-1, 0, 1, 2, '#f5b83d'); r(5, 0, 1, 2, '#f5b83d'); r(1, 3, 3, 2, '#d99a1e'); r(0, 5, 5, 2, '#8a6d1f'); r(1, 1, 1, 1, '#fff6c9'); break;
-      case 'chart': r(-2, -4, 7, 10, '#fafafa'); r(-1, 1, 1, 4, '#3e8ef7'); r(1, -1, 1, 6, '#30a46c'); r(3, -3, 1, 8, '#f5b83d'); r(-2, 6, 7, 1, '#9aa4b2'); break;
-      case 'sticky': r(0, 2, 3, 3, '#f5b83d'); r(2, 5, 3, 3, '#e93d82'); r(0, 8, 3, 2, '#79c0ff'); break;
-      case 'deskphone': r(-1, 5, 6, 3, '#2a2d35'); r(-1, 3, 6, 2, '#44444c'); r(0, 6, 1, 1, busy && Math.floor(t * 2) % 2 ? '#30a46c' : '#5d6580'); break;
-      case 'tablet': r(-1, 6, 7, 5, D); r(0, 7, 5, 3, '#44444c'); r(5, 3, 1, 6, '#e6e8ef'); r(0, 8, 2, 1, '#30a46c'); break;
-      case 'dslr': r(-1, 3, 7, 4, D); r(0, 2, 2, 1, D); r(1, 4, 3, 3, '#3a3f4b'); r(2, 5, 1, 1, '#79c0ff'); r(5, 3, 1, 1, '#e5484d'); break;
-      case 'tripod': r(-9, -12, 7, 5, D); r(-3, -11, 1, 3, '#3a3f4b'); r(-8, -11, 1, 1, busy && Math.floor(t * 2) % 2 ? '#e5484d' : '#5a1d1f');
-        r(-6, -7, 1, 21, '#5d6580'); r(-9, 10, 1, 5, '#5d6580'); r(-3, 10, 1, 5, '#5d6580'); break;
-      case 'monitor2': r(-3, -5, 8, 8, '#2a2d35'); r(-2, -4, 6, 5, '#0f1720'); r(-2, -1, 3, 1, '#8e4ec6'); r(0, 0, 3, 1, '#30a46c'); r(0, 3, 2, 2, '#2a2d35'); break;
-      case 'ringlight': r(-10, -16, 8, 1, '#fff6c9'); r(-10, -8, 8, 1, '#fff6c9'); r(-11, -15, 1, 7, '#fff6c9'); r(-2, -15, 1, 7, '#fff6c9');
-        r(-7, -14, 3, 5, D); r(-6, -7, 1, 21, '#5d6580'); r(-9, 14, 7, 1, '#5d6580');
-        if (busy) { r(-13, -18, 14, 13, 'rgba(255,246,201,0.12)'); }
-        break;
-      case 'phonestand': r(0, 0, 4, 6, D); r(1, 1, 2, 4, '#fafafa'); r(1, 2, 2, 1, '#e93d82'); r(0, 6, 4, 1, '#5d6580'); break;
-      case 'notebook': r(-1, 5, 7, 5, '#fafafa'); r(0, 6, 5, 1, '#9aa4b2'); r(0, 8, 4, 1, '#9aa4b2'); r(5, 4, 1, 5, '#3e8ef7'); break;
-      case 'duck': r(0, 6, 4, 3, '#f5d000'); r(1, 4, 2, 2, '#f5d000'); r(3, 5, 1, 1, '#f76b15'); r(1, 4, 1, 1, D); break;
-      default: r(0, 6, 3, 4, '#fafafa'); r(0, 6, 3, 1, '#6b3e1f');
-    }
-  }
-
-  function drawChair(g, d) {
-    const x = d.x, Y = d.ty * T;
-    g.fillStyle = '#2a2d35'; g.fillRect(x - 8, Y - 9, 16, 12);
-    g.fillStyle = '#3b3f4a'; g.fillRect(x - 7, Y - 8, 14, 10);
-    g.fillStyle = shade(d.role.color, -0.1); g.fillRect(x - 7, Y - 8, 14, 2);
-  }
-
-  function drawPlant(g, tx, ty, kind = 0) {
-    const X = tx * T, Y = ty * T;
-    const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(X + x, Y + y, w, h); };
-    if (kind === 1) { // monstera in a white pot
-      r(4, 9, 8, 7, '#eceff3'); r(3, 8, 10, 2, '#cfd6df');
-      r(0, -2, 7, 6, '#2e8b57'); r(9, -4, 7, 6, '#2e8b57'); r(4, -8, 8, 7, '#3cb371');
-      r(2, 0, 1, 2, '#1f6b42'); r(12, -2, 1, 2, '#1f6b42'); r(7, -6, 2, 1, '#1f6b42'); r(7, -1, 2, 9, '#1f6b42');
-      return;
-    }
-    if (kind === 2) { // cactus in terracotta
-      r(4, 10, 8, 6, '#c2603a'); r(3, 9, 10, 2, '#9c4a2c');
-      r(6, -1, 4, 11, '#3f9a5c'); r(3, 2, 3, 2, '#3f9a5c'); r(3, -1, 2, 4, '#3f9a5c'); r(10, 4, 3, 2, '#3f9a5c'); r(11, 1, 2, 4, '#3f9a5c');
-      r(7, 1, 1, 1, '#a6e3b8'); r(8, 5, 1, 1, '#a6e3b8'); r(7, -2, 2, 1, '#e93d82');
-      return;
-    }
-    if (kind === 3) { // snake plant in a black pot
-      r(4, 9, 8, 7, '#2a2d35'); r(3, 8, 10, 2, '#1d1d24');
-      [[4, -6, 2], [6, -9, 2], [8, -7, 2], [10, -4, 2]].forEach(([x, y, w]) => { r(x, y, w, 17 - (y + 8) - 1 + 0, '#4c8c4a'); r(x, y, 1, 4, '#d9c35c'); });
-      return;
-    }
-    r(4, 9, 8, 7, '#b5651d'); r(3, 8, 10, 2, '#8b4513');
-    r(3, 0, 10, 8, '#2e8b57'); r(1, 2, 4, 5, '#3cb371'); r(11, 1, 4, 5, '#3cb371');
-    r(6, -4, 4, 6, '#3cb371'); r(5, 3, 2, 2, '#56c98a'); r(10, -1, 2, 2, '#56c98a');
-  }
-
-  function drawBookshelf(g) {
-    const X = 18 * T, Y = 2 * T;
-    g.fillStyle = '#5a3a22'; g.fillRect(X, Y - 18, 32, 34);
-    g.fillStyle = '#6e4a2c'; g.fillRect(X + 2, Y - 16, 28, 30);
-    const books = ['#e5484d', '#3e8ef7', '#30a46c', '#f5b83d', '#8e4ec6', '#12a594', '#f76b15'];
-    for (let s = 0; s < 3; s++) {
-      const sy = Y - 15 + s * 10;
-      let bx = X + 3;
-      for (let i = 0; bx < X + 28; i++) {
-        const w = 2 + ((i + s) % 2), h = 6 + ((i * 3 + s) % 3);
-        g.fillStyle = books[(i + s * 2) % books.length]; g.fillRect(bx, sy + 9 - h, w, h);
-        bx += w + 1;
-      }
-      g.fillStyle = '#5a3a22'; g.fillRect(X + 2, sy + 9, 28, 1);
-    }
-  }
-
-  function drawCoffeeBar(g, t, busy) {
-    const X = 21 * T, Y = 2 * T;
-    const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(X + x, Y + y, w, h); };
-    r(0, 0, 48, 15, '#8d99ae'); r(0, 0, 48, 3, '#dfe3e8'); r(0, 14, 48, 2, '#6b7488');
-    // coffee machine
-    r(4, -12, 13, 14, '#2b2b30'); r(5, -11, 11, 4, '#44444c'); r(14, -10, 1, 1, Math.floor(t * 2) % 2 ? '#e5484d' : '#7a1d1f');
-    r(8, -4, 5, 1, '#111'); r(9, -2, 3, 3, '#fafafa');
-    if (busy) {
-      g.fillStyle = 'rgba(255,255,255,0.6)';
-      for (let i = 0; i < 3; i++) {
-        const k = (t * 6 + i * 4) % 10;
-        g.fillRect(X + 10 + Math.round(Math.sin(t * 3 + i) * 1), Y - 4 - k, 1, 1);
-      }
-    }
-    // microwave + cups
-    r(28, -7, 15, 9, '#d7dbe1'); r(29, -6, 9, 7, '#2a2d35'); r(39, -5, 2, 1, '#30a46c');
-    r(22, -2, 3, 3, '#e5484d'); r(44, -1, 2, 2, '#3e8ef7');
-    // menu board on wall
-    g.fillStyle = '#2b2f3a'; g.fillRect(X + 4, 5, 40, 12);
-    g.fillStyle = '#f5b83d'; g.fillRect(X + 7, 8, 14, 1); g.fillStyle = '#cfd6df';
-    g.fillRect(X + 7, 11, 22, 1); g.fillRect(X + 7, 13, 18, 1);
-  }
-
-  function drawCooler(g) {
-    const X = 24 * T, Y = 2 * T;
-    g.fillStyle = '#9fd3ff'; g.fillRect(X + 4, Y - 14, 8, 9);
-    g.fillStyle = '#c9e7ff'; g.fillRect(X + 5, Y - 13, 3, 6);
-    g.fillStyle = '#e7ebf0'; g.fillRect(X + 3, Y - 5, 10, 20);
-    g.fillStyle = '#3e8ef7'; g.fillRect(X + 5, Y + 1, 2, 2);
-    g.fillStyle = '#e5484d'; g.fillRect(X + 9, Y + 1, 2, 2);
-  }
-
-  function drawArcade(g, t, playing) {
-    const X = 24 * T, Y = 5 * T;
-    g.fillStyle = '#3a1d5c'; g.fillRect(X + 2, Y - 14, 13, 30);
-    g.fillStyle = '#5b2a86'; g.fillRect(X + 3, Y - 13, 11, 28);
-    g.fillStyle = '#111'; g.fillRect(X + 4, Y - 10, 9, 8);
-    if (playing) {
-      const c = ['#e93d82', '#f5b83d', '#3fb950', '#3e8ef7'][Math.floor(t * 4) % 4];
-      g.fillStyle = c; g.fillRect(X + 5 + Math.floor(t * 6) % 6, Y - 8, 2, 2);
-      g.fillStyle = '#f5b83d'; g.fillRect(X + 6, Y - 4, 4, 1);
-    } else {
-      g.fillStyle = '#2a2050'; g.fillRect(X + 5, Y - 9, 7, 6);
-    }
-    g.fillStyle = '#f5b83d'; g.fillRect(X + 3, Y - 13, 11, 2);
-    g.fillStyle = '#2a1640'; g.fillRect(X + 3, Y, 11, 3);
-    g.fillStyle = '#e5484d'; g.fillRect(X + 5, Y, 2, 2);
-  }
-
-  // Photo studio: seamless paper backdrop, two softboxes and a camera on a tripod.
-  function drawBackdrop(g) {
-    const X = 19 * T, Y = 5 * T;
-    g.fillStyle = '#3a3f4b'; g.fillRect(X - 1, Y - 22, 2, 38); g.fillRect(X + 63, Y - 22, 2, 38);
-    g.fillStyle = '#2a2d35'; g.fillRect(X - 2, Y - 23, 68, 3);
-    g.fillStyle = '#e9e4f5'; g.fillRect(X + 1, Y - 20, 62, 30);
-    g.fillStyle = '#ddd6ee'; g.fillRect(X + 1, Y + 4, 62, 6);
-    g.fillStyle = '#d0c7e6'; g.fillRect(X + 1, Y + 10, 62, 6);
-  }
-
-  function drawSoftbox(g, tx, on) {
-    const X = tx * T, Y = 6 * T;
-    g.fillStyle = '#5d6580'; g.fillRect(X + 7, Y - 6, 2, 20); g.fillRect(X + 3, Y + 13, 10, 1);
-    g.fillStyle = '#1d1d24'; g.fillRect(X + 1, Y - 16, 14, 11);
-    g.fillStyle = on ? '#fffbea' : '#d9dde3'; g.fillRect(X + 2, Y - 15, 12, 9);
-    if (on) { g.fillStyle = 'rgba(255,250,220,0.18)'; g.fillRect(X - 6, Y - 20, 28, 20); }
-  }
-
-  function drawTripod(g, t, rec) {
-    const X = 20 * T, Y = 7 * T;
-    g.fillStyle = '#5d6580'; g.fillRect(X + 7, Y - 2, 1, 14); g.fillRect(X + 4, Y + 8, 1, 6); g.fillRect(X + 10, Y + 8, 1, 6);
-    g.fillStyle = '#1d1d24'; g.fillRect(X + 3, Y - 7, 9, 6); g.fillRect(X + 5, Y - 9, 3, 2);
-    g.fillStyle = '#3a3f4b'; g.fillRect(X + 5, Y - 5, 5, 3);
-    g.fillStyle = rec && Math.floor(t * 2) % 2 ? '#e5484d' : '#5a1d1f'; g.fillRect(X + 10, Y - 6, 1, 1);
-  }
-
-  function drawBeanbag(g, tx, ty, c) {
-    const X = tx * T, Y = ty * T;
-    g.fillStyle = shade(c, -0.25); g.fillRect(X + 1, Y + 4, 14, 11); g.fillRect(X + 2, Y + 2, 12, 2);
-    g.fillStyle = c; g.fillRect(X + 2, Y + 3, 12, 10); g.fillRect(X + 3, Y + 1, 10, 2);
-    g.fillStyle = shade(c, 0.2); g.fillRect(X + 4, Y + 3, 4, 2);
-  }
-
-  // Neon heart on the brick wall, with a little flicker.
-  function drawNeon(g, x, t) {
-    const on = !((t % 9) > 8.6 && Math.floor(t * 20) % 2);
-    const HEART = ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...'];
-    if (on) { g.fillStyle = 'rgba(233,61,130,0.22)'; g.fillRect(x - 3, 4, 15, 14); }
-    HEART.forEach((row, j) => { for (let i = 0; i < row.length; i++) if (row[i] === '#') { g.fillStyle = on ? (j === 0 || i === 0 || i === 6 ? '#ff8fc0' : '#e93d82') : '#5e2a40'; g.fillRect(x + i, 7 + j, 1, 1); } });
-  }
-
-  function drawSofa(g) {
-    const X = 19 * T, Y = 9 * T;
-    g.fillStyle = '#7b2d3b'; g.fillRect(X, Y - 4, 64, 10);
-    g.fillStyle = '#93394a'; g.fillRect(X + 1, Y - 3, 62, 3);
-    g.fillStyle = '#a8455a'; g.fillRect(X, Y + 6, 64, 8);
-    g.fillStyle = '#7b2d3b'; g.fillRect(X - 3, Y - 1, 4, 15); g.fillRect(X + 63, Y - 1, 4, 15);
-    g.fillStyle = '#5e2230'; g.fillRect(X, Y + 13, 64, 2);
-    for (let i = 1; i < 4; i++) { g.fillStyle = '#93394a'; g.fillRect(X + i * 16, Y + 6, 1, 7); }
-  }
-
-  function drawTable(g) {
-    const X = 20 * T, Y = 11 * T;
-    g.fillStyle = '#6e4a2c'; g.fillRect(X + 3, Y + 10, 2, 5); g.fillRect(X + 27, Y + 10, 2, 5);
-    g.fillStyle = '#a0683c'; g.fillRect(X + 1, Y + 3, 30, 8);
-    g.fillStyle = '#b97b4a'; g.fillRect(X + 1, Y + 3, 30, 1);
-    g.fillStyle = '#fafafa'; g.fillRect(X + 8, Y + 5, 3, 3); g.fillRect(X + 18, Y + 5, 7, 4);
-    g.fillStyle = '#3e8ef7'; g.fillRect(X + 19, Y + 6, 5, 2);
-  }
-
   // ---- agents -------------------------------------------------------------------
   const sims = new Map();
   let selectedId = null, hoverId = null;
@@ -638,15 +300,7 @@
   function upsert(agent, opts = {}) {
     let s = sims.get(agent.id);
     if (!s) {
-      const look = lookFor(agent.id);
-      if (!look.role) {
-        const taken = new Set([...sims.values()].filter((o) => !o.data.parentId).map((o) => o.look.role.id));
-        const role = PO.roles.pick(agent, taken);
-        look.role = role;
-        look.accessory = role.accessory === 'glasses' ? null : role.accessory;
-        look.glasses = look.glasses || role.accessory === 'glasses';
-        look.roleColor = role.color;
-      }
+      const look = castLook(agent);
       s = { id: agent.id, data: agent, look, path: [], dir: 'right', pose: 'stand', frame: 0, dist: 0,
         x: -10, y: DOOR.ty * T + 12, targetKey: null, desk: null, spot: null, nextWander: 0,
         leaving: false, atTarget: false, blinkAt: Math.random() * 4 };
@@ -669,6 +323,8 @@
     if (s.emote && s.emote.sticky && kind !== 'thanks' && performance.now() / 1000 < s.emote.until) return;
     s.emote = { ...e, until: performance.now() / 1000 + e.ms / 1000, start: performance.now() / 1000 };
     if (kind === 'done' || kind === 'thanks' || kind === 'allclear') confetti(s.x, s.y - 24);
+    if (kind === 'done' && !s.data.parentId) tasksDone++;
+    if (kind === 'done') say(s, pickLine(s, 'done'), 3.5);
   }
 
   // ---- workload, fires and rescues ---------------------------------------------
@@ -703,8 +359,6 @@
     let helper = idle[0];
     if (!helper) {
       const id = `npc-fire-${++npcSeq}`;
-      const look = lookFor(id);
-      Object.assign(look, { role: FIRE_ROLE, accessory: 'helmet', roleColor: FIRE_ROLE.color, shirt: '#f76b15', shirtDark: '#d2570f', name: 'Bomba' });
       upsert({ id, npc: true, status: 'idle', project: 'Facilities', detail: 'Fire duty', toolCount: 0, startedAt: Date.now(), lastActive: Date.now() });
       helper = sims.get(id);
     }
@@ -719,7 +373,8 @@
       const f = d.fire;
       if (!f) continue;
       const helper = sims.get(f.helper);
-      const X = d.tx * T, Y = d.ty * T;
+      const [fox, foy] = fireOffset(d);
+      const X = d.tx * T + fox, Y = d.ty * T + foy;
       if (f.phase === 'burning') {
         if (Math.random() < 0.5) particle(X + 8 + Math.random() * 10, Y - 12, (Math.random() - 0.5) * 6, -12 - Math.random() * 8, 1.6, Math.random() < 0.5 ? '#6b6f7a' : '#4a4e58', 2);
         if (helper && helper.task && helper.atTarget) { f.phase = 'extinguishing'; f.at = t; helper.task.phase = 'spraying'; }
@@ -744,22 +399,6 @@
           }
         }
       }
-    }
-  }
-
-  function drawFire(g, d, t) {
-    const f = d.fire;
-    const X = d.tx * T, Y = d.ty * T;
-    g.fillStyle = '#1a0d0a'; g.fillRect(X + 6, Y - 7, 13, 8);
-    if (f.phase === 'smoke') return;
-    const k = f.phase === 'extinguishing' ? Math.max(0, 1 - (t - f.at) / 3) : 1;
-    g.fillStyle = `rgba(255,110,30,${0.18 * k})`; g.fillRect(X - 2, Y - 20, 30, 34);
-    for (let i = 0; i < 7; i++) {
-      const h = Math.round((6 + Math.sin(t * 12 + i * 1.7) * 3 + (i % 3) * 2) * k);
-      const x = X + 6 + i * 2;
-      g.fillStyle = '#e5484d'; g.fillRect(x, Y - 7 - h, 2, h);
-      g.fillStyle = '#f76b15'; g.fillRect(x, Y - 7 - Math.round(h * 0.7), 2, Math.round(h * 0.7));
-      g.fillStyle = '#f5d000'; g.fillRect(x, Y - 7 - Math.round(h * 0.35), 2, Math.round(h * 0.35));
     }
   }
 
@@ -792,7 +431,7 @@
     for (const p of particles) {
       g.globalAlpha = Math.min(1, p.life / p.max * 1.5);
       g.fillStyle = p.color;
-      g.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+      g.beginPath(); g.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2); g.fill();
     }
     g.globalAlpha = 1;
   }
@@ -813,34 +452,162 @@
   }
 
   // Current emotion of an agent: event reaction, else status, else where they hang out.
+  // ---- personality: moods, chatter, couples, jokes, comfort -----------------------
+  const now = () => performance.now() / 1000;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const pickFrom = (arr) => (arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null);
+  const isNight = () => { const h = new Date().getHours(); return h >= 23 || h < 5; };
+  const LOVE = { blu: ['Lili, nak kopi?', 'Kau okay tak?', 'Jom tengok movie', 'Different but same energy'], lili: ['Jom makan! Setuju je!', 'Hehe~ 💕', 'Danial comel la', 'Teman Lili shopping?'] };
+  const JOKES = ['Kenapa PC sejuk? Ada Windows! 😂', 'Bug ni feature la bro!', 'Deadline? Dead... line 😂', 'Kopi habis, motivasi pun habis', 'Ctrl+Z hidup aku boleh?'];
+  const LAUGHS = ['HAHAHA!', 'Hahaha kelakar!', 'LOL 😂', 'Wkwkwk', 'Hahah adoi'];
+
+  function pickLine(s, ctx) {
+    const L = s.look.mascot.lines || {};
+    return pickFrom(L[ctx]) || pickFrom(L.chat) || null;
+  }
+
+  function say(s, text, secs = 3.5) {
+    if (!text) return;
+    s.chat = { text, until: now() + secs };
+  }
+
+  function feel(s, mood, secs) { s.social = { mood, until: now() + secs }; }
+
+  function stressed(s, t) {
+    const st = s.data.status;
+    if (WORK.has(st) && s.atTarget && loadOf(s, t) >= STRESS_AT) return true;
+    return st === 'waiting' && s.waitingSince && t - s.waitingSince > 12;
+  }
+
+  // Current emotion: event reaction > social moment > stress > work > where they hang out.
   function moodFor(s, t) {
     if (s.emote && t < s.emote.until) return s.emote.mood;
+    if (s.social && t < s.social.until) return s.social.mood;
+    if (s.task) return s.task.type === 'comfort' ? 'happy' : 'focused';
     const st = s.data.status;
-    if (WORK.has(st) && s.atTarget && loadOf(s, t) >= STRESS_AT) return 'worried';
+    if (stressed(s, t)) {
+      const crit = loadOf(s, t) >= FIRE_AT - 2;
+      return crit || Math.floor(t / 3) % 2 ? 'stressed' : s.look.mascot.stressMood || 'embarrassed';
+    }
+    if (WORK.has(st) && s.atTarget && isNight() && (t + s.blinkAt * 13) % 25 < 5) return 'tired';
     if (STATUS_MOOD[st] && (s.atTarget || st === 'waiting')) return STATUS_MOOD[st];
-    if (s.pose === 'walk') return 'neutral';
+    if (s.pose === 'walk') return 'normal';
     const spotName = s.spot ? s.spot.name : '';
-    if (/^(sofa|bean)/.test(spotName)) return ((t + s.blinkAt * 7) % 30) < 14 ? 'sleepy' : 'happy';
+    if (/^(sofa|bean)/.test(spotName)) return ((t + s.blinkAt * 7) % 30) < 12 ? 'tired' : 'happy';
     if (/^(coffee|cooler)/.test(spotName)) return 'happy';
-    if (/^(studio|arcade|shoot)/.test(spotName)) return 'excited';
+    if (/^(studio|shoot)/.test(spotName)) return 'joyful';
+    if (/^arcade/.test(spotName)) return Math.floor(t / 4) % 3 === 0 ? 'angry' : 'joyful';
     if (/^books/.test(spotName)) return 'curious';
-    return 'neutral';
+    if (/^win/.test(spotName)) return 'thinking';
+    return 'normal';
   }
 
   function armsFor(s, t) {
     if (s.emote && t < s.emote.until && s.emote.arms && (s.emote.sticky || t - s.emote.start < 2)) return s.emote.arms;
     if (s.task && s.task.phase === 'spraying') return 'wave';
+    if (s.task && s.task.type === 'comfort' && s.atTarget) return 'wave';
+    if (s.social && t < s.social.until && s.social.mood === 'laughing') return Math.floor(t * 3) % 2 ? 'cheer' : null;
     if (s.atTarget && s.data.status === 'waiting') return 'wave';
     if (s.atTarget && s.spot && /^studio/.test(s.spot.name) && Math.floor(t / 2) % 2) return 'cheer';
     return null;
   }
 
+  // Bubble: event text > what they are saying > status label.
   function bubbleFor(s, t) {
     if (s.emote && t < s.emote.until && s.emote.text) return s.emote.text;
+    if (s.chat && t < s.chat.until) return s.chat.text;
     const st = s.data.status;
     if (st === 'typing') return s.look.role.verb || 'WORKING';
     if (st === 'idle' && s.id !== selectedId && s.id !== hoverId) return null;
     return BUBBLE[st] || null;
+  }
+  const isChat = (s, t) => !(s.emote && t < s.emote.until && s.emote.text) && s.chat && t < s.chat.until;
+
+  const idleHere = (s) => !s.leaving && !s.task && s.atTarget && !WORK.has(s.data.status) && !s.data.npc;
+  const near = (a, b, d) => Math.hypot(a.x - b.x, a.y - b.y) < d;
+  let nextJoke = 0, nextComfort = 0, nextPairChat = 0;
+
+  function updateSocial(t) {
+    const all = [...sims.values()];
+    for (const s of all) {
+      if (s.data.status === 'waiting') s.waitingSince = s.waitingSince || t; else s.waitingSince = 0;
+      if (s.nextChat == null) s.nextChat = t + rand(3, 15);
+      if (t < s.nextChat || (s.chat && t < s.chat.until) || s.leaving) continue;
+      let ctx = WORK.has(s.data.status) ? 'work' : 'idle';
+      if (stressed(s, t)) ctx = 'stress';
+      if (s.task) ctx = s.task.type === 'comfort' ? 'comfort' : 'help';
+      if (WORK.has(s.data.status) && isNight() && Math.random() < 0.3) { say(s, pickFrom(['Ngantuk gila...', 'Kopi lagi satu...', '*menguap*'])); feel(s, 'tired', 4); }
+      else say(s, pickLine(s, ctx));
+      s.nextChat = t + (ctx === 'stress' ? rand(6, 11) : rand(16, 38));
+    }
+
+    // couple: Danial & Lili share the sofa and get all heart-eyed
+    const blu = all.find((o) => o.look.mascot.id === 'blu'), lili = all.find((o) => o.look.mascot.id === 'lili');
+    if (blu && lili && !WORK.has(blu.data.status) && !WORK.has(lili.data.status) && !blu.leaving && !lili.leaving) {
+      blu.date = 'sofa20'; lili.date = 'sofa21';
+      if (idleHere(blu) && idleHere(lili) && near(blu, lili, 24)) {
+        for (const o of [blu, lili]) if (!o.social || t > o.social.until) feel(o, 'love', 6);
+        if (t > (blu.nextLove || 0)) {
+          blu.nextLove = t + rand(12, 20);
+          say(blu, pickFrom(LOVE.blu), 3);
+          setTimeout(() => say(lili, pickFrom(LOVE.lili), 3), 1600);
+        }
+      }
+    } else { if (blu) blu.date = null; if (lili) lili.date = null; }
+
+    // Amir (the joker) cracks a joke; whoever is close by bursts out laughing
+    const orange = all.find((o) => o.look.mascot.id === 'orange');
+    if (orange && idleHere(orange) && t > nextJoke) {
+      const crowd = all.filter((o) => o !== orange && idleHere(o) && near(o, orange, 64));
+      if (crowd.length) {
+        nextJoke = t + rand(22, 35);
+        say(orange, pickFrom(JOKES), 3.5); feel(orange, 'laughing', 4);
+        setTimeout(() => crowd.forEach((o) => { feel(o, 'laughing', 3.5); say(o, pickFrom(LAUGHS), 2.5); }), 1800);
+      }
+    }
+
+    // two idle colleagues next to each other have a little chat
+    if (t > nextPairChat) {
+      nextPairChat = t + rand(8, 14);
+      const idle = all.filter(idleHere);
+      for (const a of idle) {
+        const b = idle.find((o) => o !== a && near(o, a, 40) && !(o.chat && t < o.chat.until));
+        if (b && !(a.chat && t < a.chat.until)) {
+          say(a, pickLine(a, 'chat'), 3); feel(a, 'happy', 3);
+          setTimeout(() => { say(b, pickLine(b, 'chat'), 3); feel(b, Math.random() < 0.3 ? 'laughing' : 'happy', 3); }, 1700);
+          break;
+        }
+      }
+    }
+
+    // the caring ones (Nadia, Aina, Lili, Haziq) walk over to whoever is stressed
+    if (t > nextComfort) {
+      const victim = all.find((o) => stressed(o, t) && o.desk && !o.desk.fire && (!o.comfortedAt || t - o.comfortedAt > 60));
+      if (victim) {
+        const carers = ['lilac', 'white', 'lili', 'green'];
+        const helper = carers.map((id) => all.find((o) => o.look.mascot.id === id && o !== victim && !o.leaving && !o.task && !WORK.has(o.data.status))).find(Boolean);
+        if (helper) {
+          nextComfort = t + 20;
+          victim.comfortedAt = t;
+          helper.task = { type: 'comfort', desk: victim.desk, phase: 'going', victim: victim.id };
+          say(helper, `Jap, ${victim.look.name} macam stress...`, 3);
+          onEvent({ kind: 'comfort', agentId: helper.id, text: `${helper.look.name} pergi pujuk ${victim.look.name} 💜` });
+        }
+      }
+    }
+    for (const h of all) {
+      const k = h.task;
+      if (!k || k.type !== 'comfort') continue;
+      const victim = sims.get(k.victim);
+      if (!victim) { h.task = null; continue; }
+      if (k.phase === 'going' && h.atTarget) {
+        k.phase = 'talking'; k.at = t;
+        say(h, pickLine(h, 'comfort') || 'Okay tak? Rehat jap 💜', 3.5);
+        setTimeout(() => { say(victim, pickLine(victim, 'thanks') || 'Terima kasih 🥹', 3); emote(victim.id, 'comforted'); if (victim.tools) victim.tools.splice(0, Math.ceil(victim.tools.length / 2)); }, 1800);
+      } else if (k.phase === 'talking' && t - k.at > 4.5) {
+        h.task = null; feel(h, 'happy', 3);
+      }
+    }
   }
 
   function remove(id) {
@@ -855,6 +622,7 @@
   function targetFor(s) {
     if (s.task && !s.leaving) {
       const d = s.task.desk;
+      if (s.task.type === 'comfort') return { key: `comfort:${d.tx},${d.ty}`, tile: { tx: d.tx + 1, ty: d.ty + 1 }, x: d.tx * T + 24, y: (d.ty + 1) * T + 10, pose: 'stand', dir: 'up' };
       return { key: `task:${d.tx},${d.ty}`, tile: { tx: d.tx, ty: d.ty + 1 }, x: d.tx * T + 10, y: (d.ty + 1) * T + 10, pose: 'stand', dir: 'up' };
     }
     if (s.leaving) {
@@ -882,10 +650,16 @@
       }
     }
     const now = performance.now() / 1000;
+    const date = s.date && SPOTS.find((p) => p.name === s.date);
+    if (date && (!s.spot || s.spot !== date) && ![...sims.values()].some((o) => o !== s && o.spot === date)) { s.spot = date; s.nextWander = now + 60; }
     if (!s.spot || now > s.nextWander) {
       const taken = new Set([...sims.values()].filter((o) => o !== s && o.spot).map((o) => o.spot.name));
       const options = SPOTS.filter((p) => !taken.has(p.name) && (!s.spot || p.name !== s.spot.name));
-      if (options.length) s.spot = options[Math.floor(Math.random() * options.length)];
+      // personality: most of the time they go where they like to hang out
+      const likes = (s.look.mascot.likes || []);
+      const fav = options.filter((p) => likes.some((l) => p.name.startsWith(l)));
+      const pool = fav.length && Math.random() < 0.75 ? fav : options;
+      if (pool.length) s.spot = pool[Math.floor(Math.random() * pool.length)];
       s.nextWander = now + 25 + Math.random() * 35;
     }
     if (!s.spot) return { key: 'stand', tile: { tx: 8, ty: 6 }, x: 8 * T + 8, y: 6 * T + 12, pose: 'stand', dir: 'down' };
@@ -926,11 +700,22 @@
   }
 
   // ---- render -------------------------------------------------------------------
-  const low = document.createElement('canvas');
-  low.width = W; low.height = H;
-  const g = low.getContext('2d');
+  // The office is drawn as a vector illustration (scene.js) and the crew as
+  // cartoon characters (toon.js), on one canvas transformed by the camera.
   let canvas, out, scale = 2, last = performance.now();
   let active2D = true;
+  const BG_RES = 4; // cached background pixels per world unit
+  let bg = null;
+  function background() {
+    if (bg) return bg;
+    bg = document.createElement('canvas');
+    bg.width = W * BG_RES; bg.height = H * BG_RES;
+    const c = bg.getContext('2d');
+    c.scale(BG_RES, BG_RES);
+    PO.scene.paintBackground(c, W, H, desks, DOOR);
+    return bg;
+  }
+  function fireOffset(d) { return PO.scene.fireOffset(d); }
 
   function frame(nowMs) {
     const dt = Math.min(0.1, (nowMs - last) / 1000);
@@ -938,83 +723,96 @@
     const t = nowMs / 1000;
     for (const s of [...sims.values()]) step(s, dt);
     updateFires(t);
+    updateSocial(t);
     workParticles(t);
     updateParticles(dt);
     if (active2D) draw(t);
     requestAnimationFrame(frame);
   }
 
-  function draw(t) {
+  // smooth blink: 0 open .. 1 closed
+  function blinkOf(s, t) {
+    const k = (t + s.blinkAt) % 4.2;
+    return k < 0.22 ? Math.sin((k / 0.22) * Math.PI) : 0;
+  }
+
+  function drawScene(g, t) {
+    const SC = PO.scene;
     const now = new Date();
-    g.drawImage(bg, 0, 0);
-    drawWindow(g, 4 * T, t, now);
-    drawWindow(g, 12 * T, t, now);
-    drawWhiteboard(g, 7 * T, sims);
-    drawNeon(g, 20 * T + 4, t);
-    drawClock(g, 2 * T + 8, 14, now);
-    const flash = drawBrandSign(g, 14 * T + 2, t);
+    g.drawImage(background(), 0, 0, W, H);
+    SC.drawWindow(g, 4 * T, t, now);
+    SC.drawWindow(g, 12 * T, t, now);
+    SC.drawWhiteboard(g, 7 * T, sims, tasksDone, WORK);
+    SC.drawNeon(g, 20 * T + 4, t);
+    SC.drawClock(g, 104, 14, now);
+    const flash = SC.drawBrandSign(g, 14 * T + 2, t, logoReady ? logoImg : null);
 
     const at = (name) => [...sims.values()].some((s) => s.atTarget && s.spot && s.spot.name.startsWith(name) && !WORK.has(s.data.status));
+    const I = PO.world.internals;
     const items = [];
     for (const d of desks) {
       const owner = d.owner && sims.get(d.owner);
-      items.push({ y: d.ty * T + 15, draw: () => drawDesk(g, d, t, owner) });
-      items.push({ y: d.ty * T + 7, draw: () => drawChair(g, d) });
+      items.push({ y: d.ty * T + 15, draw: () => SC.drawDesk(g, d, t, owner, I) });
+      items.push({ y: d.ty * T + 7, draw: () => SC.drawChair(g, d) });
     }
-    plants.forEach(([x, y], i) => items.push({ y: y * T + 15, draw: () => drawPlant(g, x, y, i % 4) }));
-    items.push({ y: 5 * T + 15, draw: () => drawBackdrop(g) });
-    [18, 23].forEach((x) => items.push({ y: 6 * T + 15, draw: () => drawSoftbox(g, x, at('studio')) }));
-    items.push({ y: 7 * T + 15, draw: () => drawTripod(g, t, at('studio')) });
-    BEANBAGS.forEach(([x, y, c]) => items.push({ y: y * T + 6, draw: () => drawBeanbag(g, x, y, c) }));
-    items.push({ y: 2 * T + 15, draw: drawBookshelf.bind(null, g) });
-    items.push({ y: 2 * T + 15, draw: () => drawCoffeeBar(g, t, at('coffee')) });
-    items.push({ y: 2 * T + 15, draw: () => drawCooler(g) });
-    items.push({ y: 5 * T + 15, draw: () => drawArcade(g, t, at('arcade')) });
-    items.push({ y: 9 * T + 6, draw: () => drawSofa(g) });
-    items.push({ y: 11 * T + 14, draw: () => drawTable(g) });
+    plants.forEach(([x, y], i) => items.push({ y: y * T + 15, draw: () => SC.drawPlant(g, x, y, i % 4) }));
+    items.push({ y: 5 * T + 15, draw: () => SC.drawBackdrop(g) });
+    [18, 23].forEach((x) => items.push({ y: 6 * T + 15, draw: () => SC.drawSoftbox(g, x, at('studio')) }));
+    items.push({ y: 7 * T + 15, draw: () => SC.drawTripod(g, t, at('studio')) });
+    BEANBAGS.forEach(([x, y, c]) => items.push({ y: y * T + 6, draw: () => SC.drawBeanbag(g, x, y, c) }));
+    items.push({ y: 2 * T + 15, draw: () => SC.drawBookshelf(g) });
+    items.push({ y: 2 * T + 15, draw: () => SC.drawCoffeeBar(g, t, at('coffee')) });
+    items.push({ y: 2 * T + 15, draw: () => SC.drawCooler(g) });
+    items.push({ y: 5 * T + 15, draw: () => SC.drawArcade(g, t, at('arcade')) });
+    items.push({ y: 9 * T + 6, draw: () => SC.drawSofa(g) });
+    items.push({ y: 11 * T + 14, draw: () => SC.drawTable(g) });
+    items.push({ y: 9 * T + 15, draw: () => SC.drawSigns(g) });
+    items.push({ y: 14 * T + 15, draw: () => SC.drawTeamBoard(g) });
 
     for (const s of sims.values()) {
       items.push({ y: s.y, draw: () => {
         if ((s.id === selectedId || s.id === hoverId) && s.pose !== 'sitDesk') {
-          g.fillStyle = s.id === selectedId ? (Math.floor(t * 3) % 2 ? '#f5b83d' : '#ffe08a') : 'rgba(255,255,255,0.6)';
-          g.fillRect(Math.round(s.x) - 7, s.y, 14, 1);
-          g.fillRect(Math.round(s.x) - 8, s.y - 1, 1, 1); g.fillRect(Math.round(s.x) + 7, s.y - 1, 1, 1);
+          PO.toon.ell(g, s.x, s.y + 0.2, 9, 2.6, null, s.id === selectedId ? '#f5b83d' : 'rgba(255,255,255,0.6)', 0.8);
         }
-        const blink = ((t + s.blinkAt) % 4) < 0.15;
-        drawCharacter(g, s.x, s.y, s.look, {
-          dir: s.dir, pose: s.pose, frame: s.frame, t, blink, mood: moodFor(s, t), arms: armsFor(s, t),
+        const typing = s.pose === 'sitDesk' && s.atTarget && ['typing', 'running', 'planning'].includes(s.data.status);
+        PO.toon.draw(g, s.x, s.y, s.look, {
+          dir: s.dir, pose: s.pose, phase: s.dist * 0.32, t, seed: s.blinkAt, blink: blinkOf(s, t),
+          mood: moodFor(s, t), arms: armsFor(s, t), typing,
         });
-        if (s.task) { // fire extinguisher
-          const ex = Math.round(s.x) + (s.dir === 'left' ? -9 : 5), ey = Math.round(s.y) - 12;
-          g.fillStyle = '#b42318'; g.fillRect(ex, ey, 4, 8);
-          g.fillStyle = '#e5484d'; g.fillRect(ex + 1, ey + 1, 2, 6);
-          g.fillStyle = '#1d1d24'; g.fillRect(ex + 1, ey - 2, 2, 2); g.fillRect(ex + 3, ey - 3, 2, 1);
+        if (s.task && s.task.type !== 'comfort') { // fire extinguisher
+          const ex = s.x + (s.dir === 'left' ? -9 : 7), ey = s.y - 12;
+          PO.toon.rr(g, ex - 1.8, ey, 3.6, 8.4, 1.6, '#e5484d', '#16171d', 0.5);
+          PO.toon.rr(g, ex - 1, ey - 2, 2, 2.2, 0.5, '#1d1d24');
+          PO.toon.line(g, [ex + 0.6, ey - 1.6, ex + 3, ey - 3.4], '#1d1d24', 0.6);
         }
       } });
     }
     items.sort((a, b) => a.y - b.y).forEach((it) => it.draw());
 
     drawParticles(g);
-    if (flash) { g.fillStyle = 'rgba(255,250,230,0.07)'; g.fillRect(0, 0, W, H); }
-
-    // night tint
+    if (flash) { g.fillStyle = 'rgba(255,250,230,0.08)'; g.fillRect(0, 0, W, H); }
     const hr = now.getHours();
-    if (hr < 6 || hr >= 20) { g.fillStyle = 'rgba(18,22,60,0.22)'; g.fillRect(0, 0, W, H); }
+    if (hr < 6 || hr >= 20) { g.fillStyle = 'rgba(18,22,60,0.2)'; g.fillRect(0, 0, W, H); }
+  }
 
-    out.imageSmoothingEnabled = false;
-    out.drawImage(low, 0, 0, W * scale, H * scale);
+  function draw(t) {
+    const f = cam.follow && sims.get(cam.follow);
+    if (f) { cam.cx += (f.x - cam.cx) * 0.08; cam.cy += (f.y - 16 - cam.cy) * 0.08; }
+    clampCam();
+    out.setTransform(1, 0, 0, 1, 0, 0);
+    out.fillStyle = '#0f111a'; out.fillRect(0, 0, canvas.width, canvas.height);
+    const [tx, ty] = camOffset();
+    out.setTransform(scale * cam.z, 0, 0, scale * cam.z, tx, ty);
+    out.imageSmoothingEnabled = true;
+    drawScene(out, t);
+    out.setTransform(cam.z, 0, 0, cam.z, tx, ty);
     drawOverlay(t);
+    out.setTransform(1, 0, 0, 1, 0, 0);
   }
 
   function drawOverlay(t) {
     const S = scale;
-    if (signRect) {
-      const k = Math.min((signRect.w * S) / logoImg.naturalWidth, ((signRect.h - 2) * S) / logoImg.naturalHeight);
-      const lw = logoImg.naturalWidth * k, lh = logoImg.naturalHeight * k;
-      out.imageSmoothingEnabled = true;
-      out.drawImage(logoImg, (signRect.x + signRect.w / 2) * S - lw / 2, (signRect.y + (signRect.h - 2) / 2) * S - lh / 2, lw, lh);
-      out.imageSmoothingEnabled = false;
-    }
+    drawWallText(out, S);
     out.textBaseline = 'middle';
     out.textAlign = 'center';
     drawLinks(t);
@@ -1022,20 +820,21 @@
     for (const s of ordered) {
       const cx = s.x * S;
       const sitting = s.pose === 'sitDesk' || s.pose === 'sitFront';
-      const headTop = (s.y - 22 + (sitting ? 2 : 0)) * S;
+      const headTop = (s.y - PO.toon.HEIGHT + (sitting ? 3 : 0)) * S;
       const text = bubbleFor(s, t);
       if (text && !(s.data.status === 'waiting' && !s.emote && Math.floor(t * 2.5) % 2 === 1)) {
-        drawBubble(cx, headTop - S * 3 + Math.sin(t * 3 + s.blinkAt) * S * 0.6, text, s);
+        const by = headTop - S * 3 + Math.sin(t * 3 + s.blinkAt) * S * 0.6;
+        if (isChat(s, t)) drawChatBubble(cx, by, text, s); else drawBubble(cx, by, text, s);
       }
       // name tag + job title
-      const nfs = Math.max(8, Math.round(S * 2));
-      const rfs = Math.max(14, Math.round(S * 4.6));
+      const nfs = Math.max(10, Math.round(S * 3.4));
+      const rfs = Math.max(9, Math.round(S * 2.9));
       const name = s.look.name;
       const role = s.look.role;
       const tagY = (s.pose === 'sitDesk' && s.atTarget ? s.y + 11 : s.y + 4) * S;
-      out.font = `${nfs}px "Press Start 2P", monospace`;
+      out.font = `800 ${nfs}px "Nunito", system-ui, sans-serif`;
       const nw = out.measureText(name).width;
-      out.font = `${rfs}px "VT323", monospace`;
+      out.font = `700 ${rfs}px "Nunito", system-ui, sans-serif`;
       const rw = out.measureText(role.short).width;
       const tw = Math.max(nw, rw) + nfs * 0.8;
       const th = nfs * 1.3 + rfs * 0.95;
@@ -1044,7 +843,7 @@
       out.fillStyle = role.color;
       out.fillRect(cx - tw / 2, tagY - nfs * 0.75, tw, Math.max(1, S * 0.5));
       out.fillText(role.short, cx, tagY + nfs * 0.55 + rfs * 0.45);
-      out.font = `${nfs}px "Press Start 2P", monospace`;
+      out.font = `800 ${nfs}px "Nunito", system-ui, sans-serif`;
       out.fillStyle = s.id === selectedId ? '#ffe08a' : '#ffffff';
       out.fillText(name, cx, tagY);
     }
@@ -1052,8 +851,8 @@
     const s = sims.get(hoverId) || sims.get(selectedId);
     if (s) {
       const lines = [`${s.look.name} · ${s.look.role.label} (${s.look.role.ms}) — ${s.data.project}`, `${(s.data.status || '').toUpperCase()}: ${s.data.detail || ''}`];
-      const tfs = Math.max(12, Math.round(S * 4.2));
-      out.font = `${tfs}px "VT323", monospace`;
+      const tfs = Math.max(11, Math.round(S * 3.4));
+      out.font = `600 ${tfs}px "Nunito", system-ui, sans-serif`;
       out.textAlign = 'left';
       const tw = Math.min(W * S * 0.6, Math.max(...lines.map((l) => out.measureText(l).width)) + tfs);
       let x = s.x * S + 14 * S, y = (s.y - 30) * S;
@@ -1061,7 +860,7 @@
       y = Math.max(4, Math.min(H * S - tfs * 2.6 - 4, y));
       out.fillStyle = 'rgba(15,17,26,0.92)';
       out.fillRect(x, y, tw, tfs * 2.6);
-      out.fillStyle = s.look.shirt; out.fillRect(x, y, S, tfs * 2.6);
+      out.fillStyle = s.look.skin; out.fillRect(x, y, S, tfs * 2.6);
       out.fillStyle = '#ffffff'; out.fillText(clip(lines[0], tw - tfs), x + tfs / 2, y + tfs * 0.75);
       out.fillStyle = '#c9d1d9'; out.fillText(clip(lines[1], tw - tfs), x + tfs / 2, y + tfs * 1.85);
     }
@@ -1070,8 +869,8 @@
   // White pixel speech bubble with a tail, anchored at (cx, bottom).
   function drawBubble(cx, bottom, text, s) {
     const S = scale;
-    const fs = Math.max(8, Math.round(S * 2.2));
-    out.font = `${fs}px "Press Start 2P", monospace`;
+    const fs = Math.max(10, Math.round(S * 3.2));
+    out.font = `800 ${fs}px "Nunito", system-ui, sans-serif`;
     const warn = text === 'NEED YOU!' || text === 'OOPS!';
     const w = out.measureText(text).width + fs * 1.2, h = fs * 2;
     const x = Math.round(cx - w / 2), y = Math.round(bottom - h - S * 2);
@@ -1086,6 +885,35 @@
     out.fillRect(cx - S * 0.5, y + h + S, S, S);
     out.fillStyle = text === 'OOPS!' ? '#b42318' : text === 'DONE!' ? '#1f7a45' : '#1d1d24';
     out.fillText(text, cx, y + h / 2 + 1);
+  }
+
+  // Rounded speech bubble for what an agent says (wraps to two lines).
+  function drawChatBubble(cx, bottom, text, s) {
+    const S = scale;
+    const fs = Math.max(11, Math.round(S * 3.4));
+    out.font = `800 ${fs}px "Nunito", system-ui, sans-serif`;
+    const maxW = S * 70;
+    const words = text.split(' ');
+    const lines = [''];
+    for (const w of words) {
+      const test = lines[lines.length - 1] ? `${lines[lines.length - 1]} ${w}` : w;
+      if (out.measureText(test).width > maxW && lines[lines.length - 1]) lines.push(w); else lines[lines.length - 1] = test;
+    }
+    const shown = lines.slice(0, 2);
+    const w = Math.max(...shown.map((l) => out.measureText(l).width)) + fs * 0.9;
+    const h = shown.length * fs * 0.9 + fs * 0.5;
+    const x = Math.round(Math.min(Math.max(cx - w / 2, 2), W * S - w - 2)), y = Math.round(bottom - h - S * 2);
+    const b = Math.max(1, Math.round(S * 0.6)), rad = S * 2;
+    out.save();
+    out.fillStyle = s.look.skin;
+    out.beginPath(); out.roundRect ? out.roundRect(x - b, y - b, w + b * 2, h + b * 2, rad + b) : out.rect(x - b, y - b, w + b * 2, h + b * 2); out.fill();
+    out.fillRect(cx - S * 1.5 - b, y + h, S * 3 + b * 2, S + b);
+    out.fillStyle = '#ffffff';
+    out.beginPath(); out.roundRect ? out.roundRect(x, y, w, h, rad) : out.rect(x, y, w, h); out.fill();
+    out.fillRect(cx - S * 1.5, y + h - 1, S * 3, S);
+    out.fillStyle = '#1d1d24';
+    shown.forEach((l, i) => out.fillText(l, x + w / 2, y + fs * 0.25 + fs * 0.45 + i * fs * 0.9));
+    out.restore();
   }
 
   // Animated "ASSIGN TASK" arrows from a lead agent to its sub-agents.
@@ -1116,8 +944,8 @@
       out.lineTo(ex + uy * S * 3, ey - ux * S * 3);
       out.fill();
       const label = back ? 'REPORT' : 'ASSIGN TASK';
-      const fs = Math.max(8, Math.round(S * 1.8));
-      out.font = `${fs}px "Press Start 2P", monospace`;
+      const fs = Math.max(9, Math.round(S * 2.6));
+      out.font = `800 ${fs}px "Nunito", system-ui, sans-serif`;
       const mx = (sx + ex) / 2, my = (sy + ey) / 2;
       const w = out.measureText(label).width + fs;
       out.fillStyle = 'rgba(15,17,26,0.85)'; out.fillRect(mx - w / 2, my - fs, w, fs * 2);
@@ -1145,14 +973,45 @@
     canvas.style.height = `${canvas.height / dpr}px`;
   }
 
-  function pick(ev) {
+  // ---- 2D camera ----------------------------------------------------------------
+  const cam = { z: 1, cx: W / 2, cy: H / 2, follow: null };
+  function camOffset() {
+    return [canvas.width / 2 - cam.cx * scale * cam.z, canvas.height / 2 - cam.cy * scale * cam.z];
+  }
+  function clampCam() {
+    cam.z = Math.max(1, Math.min(4, cam.z));
+    const hw = W / 2 / cam.z, hh = H / 2 / cam.z;
+    cam.cx = Math.max(hw, Math.min(W - hw, cam.cx));
+    cam.cy = Math.max(hh, Math.min(H - hh, cam.cy));
+  }
+  function toWorld(ev) {
     const rect = canvas.getBoundingClientRect();
-    const x = ((ev.clientX - rect.left) / rect.width) * W;
-    const y = ((ev.clientY - rect.top) / rect.height) * H;
+    const px = ((ev.clientX - rect.left) / rect.width) * canvas.width;
+    const py = ((ev.clientY - rect.top) / rect.height) * canvas.height;
+    const [tx, ty] = camOffset();
+    return [(px - tx) / cam.z / scale, (py - ty) / cam.z / scale];
+  }
+  function zoomBy(k, at) {
+    const [wx, wy] = at || [cam.cx, cam.cy];
+    const z0 = cam.z;
+    cam.z = Math.max(1, Math.min(4, cam.z * k));
+    cam.cx = wx - (wx - cam.cx) * (z0 / cam.z);
+    cam.cy = wy - (wy - cam.cy) * (z0 / cam.z);
+    if (cam.z === 1) cam.follow = null;
+  }
+  function focus(id) {
+    const s = sims.get(id);
+    if (!s) return;
+    cam.follow = id; cam.z = Math.max(cam.z, 2.4);
+  }
+  function fit() { cam.z = 1; cam.cx = W / 2; cam.cy = H / 2; cam.follow = null; }
+
+  function pick(ev) {
+    const [x, y] = toWorld(ev);
     let best = null;
     for (const s of sims.values()) {
-      const top = s.y - 22, bottom = s.y + 2;
-      if (x >= s.x - 7 && x <= s.x + 7 && y >= top && y <= bottom && (!best || s.y > best.y)) best = s;
+      const top = s.y - 32, bottom = s.y + 1;
+      if (x >= s.x - 9 && x <= s.x + 9 && y >= top && y <= bottom && (!best || s.y > best.y)) best = s;
     }
     return best;
   }
@@ -1169,13 +1028,24 @@
     resize();
     window.addEventListener('resize', resize);
     if (window.ResizeObserver) new ResizeObserver(resize).observe(canvas.parentElement);
-    canvas.addEventListener('mousemove', (e) => {
+    let drag = null;
+    canvas.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY, cx: cam.cx, cy: cam.cy, moved: false }; });
+    window.addEventListener('pointerup', () => { setTimeout(() => { drag = null; }, 0); });
+    canvas.addEventListener('pointermove', (e) => {
+      if (drag && (e.buttons & 1)) {
+        const rect = canvas.getBoundingClientRect();
+        const dx = (e.clientX - drag.x) / rect.width * W / cam.z, dy = (e.clientY - drag.y) / rect.height * H / cam.z;
+        if (Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 4) { drag.moved = true; cam.follow = null; }
+        if (drag.moved) { cam.cx = drag.cx - dx; cam.cy = drag.cy - dy; canvas.style.cursor = 'grabbing'; return; }
+      }
       const s = pick(e);
       hoverId = s ? s.id : null;
-      canvas.style.cursor = s ? 'pointer' : 'default';
+      canvas.style.cursor = s ? 'pointer' : cam.z > 1 ? 'grab' : 'default';
     });
     canvas.addEventListener('mouseleave', () => { hoverId = null; });
-    canvas.addEventListener('click', (e) => { const s = pick(e); select(s ? s.id : null); });
+    canvas.addEventListener('click', (e) => { if (drag && drag.moved) return; const s = pick(e); select(s ? s.id : null); });
+    canvas.addEventListener('dblclick', (e) => { const s = pick(e); if (s) focus(s.id); else fit(); });
+    canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1.15 : 1 / 1.15, toWorld(e)); }, { passive: false });
     requestAnimationFrame(frame);
   }
 
@@ -1185,15 +1055,17 @@
   }
 
   PO.world = {
-    init, upsert, remove, reset, select, setLogo, emote, noteTool,
+    init, upsert, remove, reset, select, setLogo, emote, noteTool, zoomBy, focus, fit,
     onEvent: (cb) => { onEvent = cb; },
     set2D(on) { active2D = on; },
     // shared with the 3D view (world3d.js)
     internals: {
-      T, COLS, ROWS, W, H, WORK, desks, sims, plants, BEANBAGS, DOOR, bg, logoImg,
+      T, COLS, ROWS, W, H, WORK, desks, sims, plants, BEANBAGS, DOOR, logoImg, BG_RES,
+      get bg() { return background(); },
+      get tasksDone() { return tasksDone; },
       get logoReady() { return logoReady; },
       get hoverId() { return hoverId; },
-      drawScreen, deskStatus, drawWindow, drawWhiteboard, drawNeon, drawClock, drawBrandSign,
+      drawScreen, deskStatus, drawWallText, isChat,
       moodFor, armsFor, bubbleFor,
     },
     look: (id) => (sims.get(id) ? sims.get(id).look : lookFor(id)),

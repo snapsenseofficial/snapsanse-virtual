@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SnapSense Pixel Office</title>
+  <title>SnapSense Virtual Office</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><rect x='2' y='0' width='4' height='2' fill='%232b1d14'/><rect x='2' y='2' width='4' height='2' fill='%23f6d5b8'/><rect x='1' y='4' width='6' height='3' fill='%23e5484d'/><rect x='2' y='7' width='4' height='1' fill='%2326324a'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><img id="brand-logo" src="logo.png" alt="SnapSense" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>SNAPSENSE</span><em>PIXEL OFFICE</em></div>
+    <div class="brand"><img id="brand-logo" src="logo.png" alt="SnapSense" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>SNAPSENSE</span><em>VIRTUAL OFFICE</em></div>
     <div class="stats" id="stats"></div>
     <div class="actions">
       <div class="seg" role="group" aria-label="View">
@@ -26,6 +26,9 @@
   <main class="layout">
     <section class="stage" aria-label="Office floor">
       <canvas id="office"></canvas>
+      <div id="zoom2d" class="zoomctl" role="group" aria-label="Zoom">
+        <button id="zin" class="btn" title="Zoom in (or scroll)">+</button><button id="zout" class="btn" title="Zoom out">−</button><button id="zfit" class="btn" title="Show the whole office">Fit</button>
+      </div>
       <div id="stage3d" hidden></div>
       <p id="msg3d" class="msg3d" hidden></p>
     </section>
@@ -37,7 +40,10 @@
     </aside>
   </main>
   <script src="sprites.js"></script>
+  <script src="mascots.js"></script>
   <script src="roles.js"></script>
+  <script src="toon.js"></script>
+  <script src="scene.js"></script>
   <script src="world.js"></script>
   <script src="world3d.js"></script>
   <script src="demo.js"></script>

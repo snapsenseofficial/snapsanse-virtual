@@ -1,45 +1,47 @@
-// Job roles (jawatan). Each role owns one desk, a character accessory,
-// a desk prop and a themed monitor screen. An agent's role comes from
+// Job roles (jawatan). Each role owns one desk, a mascot, a desk prop
+// and a themed monitor screen. An agent's role comes from
 // office.config.json (server), then keywords in its project name, then
 // the first role nobody holds yet.
 (function (PO) {
   'use strict';
 
-  // Desk order: row 1 = management, row 2 = production, row 3 = content & web.
+  // Desk order follows the team photo: row 1 Blu, Lili, Green, Purple;
+  // row 2 Yellow, Red, Cyan, Orange; row 3 Black, White, Navy, Lilac.
+  // Each role is played by one mascot (mascots.js).
   const ROLES = [
-    { id: 'creative-director', verb: 'IDEATING', label: 'Creative Director', short: 'Creative Dir', ms: 'Pengarah Kreatif', color: '#f5b83d', accessory: 'beret', prop: 'trophy', screen: 'moodboard',
-      keywords: ['creative', 'director', 'brief', 'concept', 'pitch', 'moodboard'] },
-    { id: 'marketing-manager', verb: 'ANALYZING', label: 'Marketing Manager', short: 'Marketing', ms: 'Pengurus Pemasaran', color: '#3e8ef7', accessory: 'tie', prop: 'chart', screen: 'chart',
-      keywords: ['marketing', 'campaign', 'ads', 'seo', 'analytics', 'growth', 'funnel', 'promo', 'launch'] },
-    { id: 'project-manager', verb: 'PLANNING', label: 'Project Manager', short: 'Project Mgr', ms: 'Pengurus Projek', color: '#12a594', accessory: 'clipboard', prop: 'sticky', screen: 'kanban',
-      keywords: ['project', 'roadmap', 'sprint', 'planning', 'ops', 'schedule', 'timeline'] },
-    { id: 'account-manager', verb: 'EMAILING', label: 'Account Manager', short: 'Account Mgr', ms: 'Pengurus Akaun Pelanggan', color: '#a18072', accessory: 'tie', prop: 'deskphone', screen: 'inbox',
-      keywords: ['client', 'account', 'crm', 'invoice', 'proposal', 'quotation', 'sales', 'booking'] },
-    { id: 'graphic-designer', verb: 'DESIGNING', label: 'Graphic Designer', short: 'Designer', ms: 'Pereka Grafik', color: '#30a46c', accessory: 'beanie', prop: 'tablet', screen: 'canvas',
-      keywords: ['design', 'brand', 'logo', 'graphic', 'poster', 'figma', 'canva', 'illustrat', 'banner', 'thumbnail'] },
-    { id: 'photographer', verb: 'RETOUCHING', label: 'Photographer', short: 'Photographer', ms: 'Jurugambar', color: '#e5484d', accessory: 'camera', prop: 'dslr', screen: 'photos',
-      keywords: ['photo', 'gallery', 'image', 'img', 'lightroom', 'portrait', 'wedding', 'raw', 'shoot'] },
-    { id: 'videographer', verb: 'FILMING', label: 'Videographer', short: 'Videographer', ms: 'Jurukamera Video', color: '#f76b15', accessory: 'cap', prop: 'tripod', screen: 'viewfinder',
-      keywords: ['footage', 'camera', 'film', 'videograph', 'drone', 'cinema', 'broll'] },
-    { id: 'video-editor', verb: 'EDITING', label: 'Video Editor', short: 'Video Editor', ms: 'Penyunting Video', color: '#8e4ec6', accessory: 'headphones', prop: 'monitor2', screen: 'timeline',
+    { id: 'video-editor', verb: 'EDITING', label: 'Video Editor', short: 'Video Editor', ms: 'Penyunting Video', tags: 'edit · video · camera', color: '#2f6df6', prop: 'monitor2', screen: 'timeline',
       keywords: ['video', 'reel', 'edit', 'premiere', 'davinci', 'capcut', 'youtube', 'clip', 'motion', 'render', 'subtitle'] },
-    { id: 'content-creator', verb: 'CREATING', label: 'Content Creator', short: 'Creator', ms: 'Pencipta Kandungan', color: '#e93d82', accessory: 'phone', prop: 'ringlight', screen: 'feed',
-      keywords: ['content', 'creator', 'vlog', 'tiktok', 'story', 'stories', 'caption', 'ugc', 'podcast'] },
-    { id: 'social-media', verb: 'POSTING', label: 'Social Media Manager', short: 'Social Media', ms: 'Pengurus Media Sosial', color: '#d6409f', accessory: 'phone', prop: 'phonestand', screen: 'feed',
+    { id: 'social-media', verb: 'POSTING', label: 'Social Media Manager', short: 'Social Media', ms: 'Pengurus Media Sosial', tags: 'content · social media · design', color: '#f06a9b', prop: 'phonestand', screen: 'feed',
       keywords: ['social', 'instagram', 'insta', 'facebook', 'threads', 'twitter', 'linkedin', 'post', 'hashtag', 'community'] },
-    { id: 'copywriter', verb: 'WRITING', label: 'Copywriter', short: 'Copywriter', ms: 'Penulis Iklan', color: '#ffa657', accessory: 'glasses', prop: 'notebook', screen: 'doc',
+    { id: 'project-manager', verb: 'PLANNING', label: 'Event & Project Planner', short: 'Planner', ms: 'Perancang Acara & Projek', tags: 'travel · planning · event', color: '#3fae6a', prop: 'sticky', screen: 'kanban',
+      keywords: ['project', 'roadmap', 'sprint', 'planning', 'ops', 'schedule', 'timeline', 'event', 'travel', 'trip'] },
+    { id: 'content-creator', verb: 'CREATING', label: 'Content Creator', short: 'Creator', ms: 'Pencipta Kandungan', tags: 'fashion · content · creative', color: '#9b6ad8', prop: 'ringlight', screen: 'feed',
+      keywords: ['content', 'creator', 'vlog', 'tiktok', 'story', 'stories', 'caption', 'ugc', 'podcast', 'fashion', 'ootd'] },
+    { id: 'marketing-manager', verb: 'ANALYZING', label: 'Marketing Manager', short: 'Marketing', ms: 'Pengurus Pemasaran', tags: 'music · energy · marketing', color: '#f2c230', prop: 'chart', screen: 'chart',
+      keywords: ['marketing', 'campaign', 'ads', 'seo', 'analytics', 'growth', 'funnel', 'promo', 'launch', 'music'] },
+    { id: 'graphic-designer', verb: 'DESIGNING', label: 'Graphic Designer', short: 'Designer', ms: 'Pereka Grafik', tags: 'designer · branding · creative', color: '#e04545', prop: 'tablet', screen: 'canvas',
+      keywords: ['design', 'brand', 'logo', 'graphic', 'poster', 'figma', 'canva', 'illustrat', 'banner', 'thumbnail'] },
+    { id: 'web-developer', verb: 'CODING', label: 'Web Dev & Research', short: 'Web Dev', ms: 'Pembangun Web & Penyelidik', tags: 'admin · research · planning', color: '#38c6e0', prop: 'duck', screen: null,
+      keywords: ['web', 'site', 'app', 'api', 'portal', 'server', 'frontend', 'backend', 'dev', 'code', 'next', 'react', 'landing', 'research', 'admin'] },
+    { id: 'photographer', verb: 'RETOUCHING', label: 'Photographer', short: 'Photographer', ms: 'Jurugambar', tags: 'photo · video · outdoor', color: '#f08a2c', prop: 'dslr', screen: 'photos',
+      keywords: ['photo', 'gallery', 'image', 'img', 'lightroom', 'portrait', 'wedding', 'raw', 'shoot', 'outdoor'] },
+    { id: 'videographer', verb: 'MIXING', label: 'Videographer & Sound', short: 'Production', ms: 'Jurukamera & Bunyi', tags: 'sound · edit · production', color: '#4a4a52', prop: 'tripod', screen: 'viewfinder',
+      keywords: ['footage', 'camera', 'film', 'videograph', 'drone', 'cinema', 'broll', 'sound', 'audio', 'production'] },
+    { id: 'copywriter', verb: 'WRITING', label: 'Copywriter', short: 'Copywriter', ms: 'Penulis Iklan', tags: 'copywriting · planning · research', color: '#d9d6cf', prop: 'notebook', screen: 'doc',
       keywords: ['copy', 'blog', 'article', 'script', 'newsletter', 'writing', 'email', 'headline', 'translate'] },
-    { id: 'web-developer', verb: 'CODING', label: 'Web Developer', short: 'Web Dev', ms: 'Pembangun Web', color: '#5b5bd6', accessory: 'hoodie', prop: 'duck', screen: null,
-      keywords: ['web', 'site', 'app', 'api', 'portal', 'server', 'frontend', 'backend', 'dev', 'code', 'next', 'react', 'landing'] },
+    { id: 'account-manager', verb: 'MEETING', label: 'Strategy & Client', short: 'Strategy', ms: 'Strategi & Pelanggan', tags: 'strategy · meeting · client', color: '#3b5bd6', prop: 'deskphone', screen: 'inbox',
+      keywords: ['client', 'account', 'crm', 'invoice', 'proposal', 'quotation', 'sales', 'booking', 'strategy'] },
+    { id: 'hr', verb: 'CARING', label: 'HR & People', short: 'HR', ms: 'Sumber Manusia', tags: 'HR · support · people', color: '#b79be6', prop: 'heart', screen: 'inbox',
+      keywords: ['hr', 'people', 'recruit', 'hiring', 'onboard', 'payroll', 'culture', 'support', 'team'] },
   ];
-  const ASSISTANT = { id: 'assistant', verb: 'WORKING', label: 'Assistant', short: 'Assistant', ms: 'Pembantu', color: '#9aa4b2', accessory: null, prop: null, screen: null, keywords: [] };
+  const ASSISTANT = { id: 'assistant', verb: 'LEARNING', label: 'Intern', short: 'Intern', ms: 'Pelatih', tags: 'belajar · bantu', color: '#9aa4b2', accessory: null, prop: null, screen: null, keywords: [] };
 
   // Tie-break order when several roles match equally (most specific first).
   const PRIORITY = ['video-editor', 'videographer', 'photographer', 'graphic-designer', 'social-media', 'content-creator',
-    'copywriter', 'marketing-manager', 'web-developer', 'account-manager', 'project-manager', 'creative-director'];
+    'copywriter', 'marketing-manager', 'web-developer', 'account-manager', 'project-manager', 'hr'];
   // Unmatched sessions fill these first (most Claude Code work is code & content).
   const FALLBACK = ['web-developer', 'content-creator', 'graphic-designer', 'video-editor', 'copywriter', 'social-media',
-    'photographer', 'videographer', 'marketing-manager', 'project-manager', 'account-manager', 'creative-director'];
+    'photographer', 'videographer', 'marketing-manager', 'project-manager', 'account-manager', 'hr'];
 
   const byId = new Map(ROLES.map((r) => [r.id, r]));
   byId.set(ASSISTANT.id, ASSISTANT);
