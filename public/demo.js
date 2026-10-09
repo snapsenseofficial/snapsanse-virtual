@@ -3,17 +3,21 @@
 (function (PO) {
   'use strict';
 
-  const PROJECTS = ['snapsense-web', 'reels-editor', 'client-portal', 'brand-kit', 'ad-campaign', 'photo-archive'];
-  const PROMPTS = [
-    'Build a landing page for the new photography package',
-    'Fix the video upload bug on mobile',
-    'Write captions for this week\'s Instagram reels',
-    'Add a booking form with WhatsApp button',
-    'Optimise all portfolio images to WebP',
-    'Create a monthly analytics report for the client',
-    'Refactor the gallery component',
-    'Generate a content calendar for October',
-  ];
+  // One simulated agent per job role, each with its own project and briefs.
+  const CREW = {
+    'creative-director': ['q4-campaign-concept', ['Draft three creative concepts for the Raya campaign', 'Review the brand moodboard and give feedback']],
+    'marketing-manager': ['ad-campaign', ['Build the October ads budget plan', 'Create a monthly analytics report for the client']],
+    'project-manager': ['studio-ops', ['Plan this week\'s shoot schedule', 'Update the project timeline for the wedding client']],
+    'account-manager': ['client-portal', ['Prepare a quotation for the corporate video package', 'Reply to client feedback on the brand video']],
+    'graphic-designer': ['brand-kit', ['Design 5 Instagram post templates', 'Export the new logo in all sizes']],
+    'photographer': ['photo-archive', ['Sort 300 RAW files by date and client', 'Optimise all portfolio images to WebP']],
+    'videographer': ['shoot-footage', ['Make a shot list for Saturday\'s event shoot', 'Organise drone footage into folders']],
+    'video-editor': ['reels-editor', ['Cut a 30s reel from the event footage', 'Add Malay subtitles to the brand video']],
+    'content-creator': ['tiktok-content', ['Script 5 TikTok hooks for the photography package', 'Plan a behind-the-scenes vlog']],
+    'social-media': ['instagram-social', ['Generate a content calendar for October', 'Write captions for this week\'s Instagram reels']],
+    'copywriter': ['blog-copy', ['Write a blog post: 10 tips for a wedding photoshoot', 'Write the newsletter headline options']],
+    'web-developer': ['snapsense-web', ['Build a landing page for the new photography package', 'Add a booking form with WhatsApp button']],
+  };
   const FILES = ['index.html', 'Gallery.tsx', 'upload.ts', 'styles.css', 'booking.ts', 'report.md', 'captions.json', 'README.md'];
   const SCRIPT = [
     () => ['thinking', 'Thinking…', null],
@@ -45,17 +49,20 @@
       if (tool || status === 'waiting') log(a, status, detail);
     }
 
-    function freeProject() {
-      const unused = PROJECTS.filter((p) => ![...agents.values()].some((x) => x.project === p));
-      return pick(unused.length ? unused : PROJECTS);
+    function freeRole() {
+      const held = new Set([...agents.values()].map((x) => x.jobRole));
+      const open = Object.keys(CREW).filter((r) => !held.has(r));
+      return pick(open.length ? open : Object.keys(CREW));
     }
 
     function spawn(parent) {
+      const jobRole = parent ? null : freeRole();
       const a = {
+        jobRole,
         id: parent ? `${parent.id}/${uid()}` : uid(),
         parentId: parent ? parent.id : null,
-        project: parent ? parent.project : freeProject(),
-        role: parent ? pick(['Explore', 'reviewer', 'designer', 'tester']) : null,
+        project: parent ? parent.project : CREW[jobRole][0],
+        role: parent ? pick(['Explore', 'reviewer', 'designer', 'researcher']) : null,
         status: 'idle', detail: 'Joined the office', tool: null, toolCount: 0,
         startedAt: Date.now(), lastActive: Date.now(),
       };
@@ -75,7 +82,7 @@
 
     function newTask(a) {
       if (!agents.has(a.id)) return;
-      const p = pick(PROMPTS);
+      const p = pick(CREW[a.jobRole][1]);
       set(a, 'thinking', `Task: ${p}`, null);
       log(a, 'prompt', p);
       let steps = 4 + Math.floor(Math.random() * 6);
@@ -93,7 +100,7 @@
           later(3500 + Math.random() * 3000, () => { set(a, 'running', '$ npm run build', 'Bash'); later(2500, next); });
           return;
         }
-        if (r < 0.2 && agents.size < 11) {
+        if (r < 0.2 && agents.size < 12) {
           set(a, 'delegating', 'Delegate: explore the codebase', 'Task');
           const child = spawn(a);
           child.onDone = () => { set(a, 'thinking', 'Reviewing Task result', null); later(1500, next); };
@@ -124,11 +131,11 @@
     }
 
     // initial crew, then occasional arrivals/departures
-    for (let i = 0; i < 4; i++) later(i * 1800, () => spawn());
+    for (let i = 0; i < 7; i++) later(i * 1500, () => spawn());
     const churn = setInterval(() => {
       const mains = [...agents.values()].filter((a) => !a.parentId);
-      if (mains.length < 6 && Math.random() < 0.5) spawn();
-      else if (mains.length > 3) {
+      if (mains.length < 10 && Math.random() < 0.5) spawn();
+      else if (mains.length > 6) {
         const idle = mains.find((a) => a.status === 'idle');
         if (idle) leave(idle);
       }

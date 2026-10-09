@@ -24,6 +24,7 @@ if (flag('help') || flag('h')) {
   --projects <dir>  Claude transcripts dir (default ~/.claude/projects)
   --no-watch        Don't read transcripts (hooks only)
   --demo            Simulated agents, no Claude Code needed
+  --config <file>   Office config (default ./office.config.json)
   --verbose         Log watcher activity`);
   process.exit(0);
 }
@@ -34,7 +35,20 @@ const DEMO = flag('demo');
 const PUBLIC = path.join(__dirname, 'public');
 const MAX_BODY = 1024 * 1024;
 
-const state = new OfficeState();
+function loadConfig() {
+  const file = path.resolve(opt('config', path.join(__dirname, 'office.config.json')));
+  if (!fs.existsSync(file)) return {};
+  try {
+    const cfg = JSON.parse(fs.readFileSync(file, 'utf8'));
+    console.log(`  Loaded ${file}`);
+    return cfg;
+  } catch (e) {
+    console.error(`  ✖ Ignoring ${file}: ${e.message}`);
+    return {};
+  }
+}
+
+const state = new OfficeState(loadConfig());
 const clients = new Set();
 
 function broadcast(msg) {

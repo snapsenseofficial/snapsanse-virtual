@@ -40,7 +40,7 @@
     for (const dx of [2, 6, 10, 14]) {
       block(dx, dy, 2, 1);
       desks.push({
-        tx: dx, ty: dy, owner: null, deco: (dx * 7 + dy * 3) % 4,
+        tx: dx, ty: dy, owner: null, role: PO.roles.ROLES[desks.length],
         seat: { tx: dx, ty: dy + 1 }, x: dx * T + 16, y: (dy + 1) * T + 9,
       });
     }
@@ -306,6 +306,61 @@
         r(0, 0, 12, 8, '#161b2e');
         for (let i = 0; i < 3; i++) r(3 + i * 3, 4, 1, 1, i <= Math.floor(t * 3) % 3 ? '#d2a8ff' : '#3b3f5c');
         break;
+      case 'moodboard':
+        r(0, 0, 12, 8, '#2b2f3a'); r(1, 1, 4, 3, '#f5b83d'); r(6, 1, 5, 2, '#e93d82'); r(1, 5, 3, 2, '#79c0ff'); r(5, 4, 3, 3, '#30a46c'); r(9, 4, 2, 3, '#fafafa');
+        r(1 + (Math.floor(t * 2) % 5) * 2, 0, 1, 1, '#fff');
+        break;
+      case 'chart': {
+        r(0, 0, 12, 8, '#f6f8fb');
+        const k = Math.floor(t * 2) % 4;
+        [3, 4, 6, 7].forEach((h, i) => r(1 + i * 3, 7 - Math.min(h, h - 3 + k), 2, Math.min(h, h - 3 + k), i === 3 ? '#30a46c' : '#3e8ef7'));
+        r(0, 7, 12, 1, '#9aa4b2');
+        break;
+      }
+      case 'kanban':
+        r(0, 0, 12, 8, '#eef1f5');
+        for (let c = 0; c < 3; c++) { r(c * 4 + 1, 1, 3, 1, ['#9aa4b2', '#f5b83d', '#30a46c'][c]); for (let i = 0; i < 3 - c + (Math.floor(t) % 2); i++) r(c * 4 + 1, 3 + i * 2, 3, 1, '#fafafa'); }
+        break;
+      case 'inbox':
+        r(0, 0, 12, 8, '#ffffff'); r(0, 0, 12, 1, '#a18072');
+        for (let i = 0; i < 3; i++) { r(1, 2 + i * 2, 1, 1, i === Math.floor(t) % 3 ? '#3e8ef7' : '#d0d5dc'); r(3, 2 + i * 2, 7 - i, 1, '#8b95a1'); }
+        break;
+      case 'canvas': {
+        r(0, 0, 12, 8, '#fafafa'); r(0, 0, 2, 8, '#3a3f4b');
+        r(3, 1, 4, 4, '#e93d82'); r(6, 3, 4, 4, 'rgba(62,142,247,0.8)'); r(8, 1, 2, 2, '#f5b83d');
+        const cx = 3 + Math.floor((t * 3) % 8), cy = 1 + Math.floor((t * 2) % 6);
+        r(cx, cy, 1, 1, '#111');
+        break;
+      }
+      case 'photos': {
+        r(0, 0, 12, 8, '#1d1d24');
+        const pal = [['#7cc4ea', '#30a46c'], ['#f2a76b', '#8a4b2a'], ['#3a3c6e', '#f5b83d'], ['#b6e1f5', '#e5484d']];
+        pal.forEach(([a, b], i) => { const x = 1 + (i % 2) * 5, y = 1 + Math.floor(i / 2) * 3; r(x, y, 4, 2, a); r(x, y + 1, 4, 1, b); });
+        const sel = Math.floor(t) % 4; r(1 + (sel % 2) * 5, 1 + Math.floor(sel / 2) * 3, 4, 1, '#fff');
+        break;
+      }
+      case 'viewfinder':
+        r(0, 0, 12, 8, '#3d5674'); r(0, 5, 12, 3, '#30a46c'); r(7, 1, 3, 3, '#f5d000');
+        r(0, 0, 2, 1, '#fff'); r(10, 0, 2, 1, '#fff'); r(0, 7, 2, 1, '#fff'); r(10, 7, 2, 1, '#fff');
+        if (Math.floor(t * 2) % 2) r(1, 1, 1, 1, '#e5484d');
+        break;
+      case 'timeline': {
+        r(0, 0, 12, 8, '#141820'); r(3, 0, 6, 4, '#3d5674'); r(3, 2, 6, 2, '#30a46c');
+        r(0, 5, 5, 1, '#8e4ec6'); r(6, 5, 6, 1, '#8e4ec6'); r(1, 6, 7, 1, '#3e8ef7'); r(0, 7, 4, 1, '#30a46c'); r(5, 7, 5, 1, '#f5b83d');
+        r(Math.floor((t * 3) % 12), 4, 1, 4, '#e5484d');
+        break;
+      }
+      case 'feed': {
+        r(0, 0, 12, 8, '#e9ecf2'); r(3, 0, 6, 8, '#ffffff');
+        const off = Math.floor(t * 2) % 3;
+        r(4, 1 - off + 1, 4, 3, ['#e93d82', '#f5b83d', '#3e8ef7'][off]); r(4, 5, 1, 1, '#e5484d'); r(6, 5, 2, 1, '#c9d1d9');
+        if (Math.floor(t * 3) % 3 === 0) r(9, 2, 2, 1, '#e5484d');
+        break;
+      }
+      case 'doc':
+        r(0, 0, 12, 8, '#fffdf7');
+        for (let i = 0; i < 4; i++) r(1, 1 + i * 2, i === 3 ? (Math.floor(t * 4) % 8) + 1 : 9 - (i % 2) * 2, 1, '#5d6580');
+        break;
       default: { // idle owner: screensaver
         r(0, 0, 12, 8, '#0d1424');
         const px = Math.floor((t * 5 + seed * 3) % 22), py = Math.floor((t * 3 + seed) % 14);
@@ -323,14 +378,36 @@
     // monitor
     r(9, -6, 14, 11, '#2a2d35'); r(15, 5, 2, 2, '#2a2d35'); r(12, 6, 8, 1, '#2a2d35');
     const st = owner ? (owner.leaving ? null : (WORK.has(owner.data.status) && owner.atTarget ? owner.data.status : 'idle')) : null;
-    drawScreen(g, X + 10, Y - 5, st, t, d.tx + d.ty);
+    const themed = st === 'typing' && d.role.screen && (!owner || owner.look.role === d.role) ? d.role.screen : st;
+    drawScreen(g, X + 10, Y - 5, themed, t, d.tx + d.ty);
     if (st && st !== 'idle') { g.fillStyle = 'rgba(160,200,255,0.10)'; g.fillRect(X + 6, Y - 8, 20, 16); }
     // keyboard + deco
     r(11, 8, 10, 2, '#e3e6ea'); r(11, 9, 10, 1, '#b8bec7');
-    if (d.deco === 0) { r(25, 6, 3, 4, '#fafafa'); r(28, 7, 1, 2, '#fafafa'); r(25, 6, 3, 1, '#6b3e1f'); }
-    else if (d.deco === 1) { r(3, 5, 6, 4, '#f0f0e8'); r(4, 6, 4, 1, '#c9c9c0'); }
-    else if (d.deco === 2) { r(25, 5, 4, 4, '#b5651d'); r(24, 1, 6, 5, '#3cb371'); r(26, 0, 2, 2, '#2e8b57'); }
-    else { r(3, 6, 5, 3, '#2a2d35'); r(4, 7, 3, 1, '#e5484d'); }
+    drawProp(r, d.role, t, !!owner && owner.atTarget && !owner.leaving);
+    // nameplate in the role colour
+    r(12, 12, 8, 2, d.role.color); r(13, 12, 6, 1, shade(d.role.color, 0.25));
+  }
+
+  // Desk props per job role.
+  function drawProp(r, role, t, busy) {
+    const D = '#1d1d24';
+    switch (role.prop) {
+      case 'trophy': r(25, 2, 5, 3, '#f5b83d'); r(24, 2, 1, 2, '#f5b83d'); r(30, 2, 1, 2, '#f5b83d'); r(26, 5, 3, 2, '#d99a1e'); r(25, 7, 5, 2, '#8a6d1f'); r(26, 3, 1, 1, '#fff6c9'); break;
+      case 'chart': r(24, 0, 7, 9, '#fafafa'); r(25, 5, 1, 3, '#3e8ef7'); r(27, 3, 1, 5, '#30a46c'); r(29, 1, 1, 7, '#f5b83d'); r(24, 9, 7, 1, '#9aa4b2'); break;
+      case 'sticky': r(2, 5, 3, 3, '#f5b83d'); r(5, 6, 3, 3, '#e93d82'); r(3, 9, 3, 2, '#79c0ff'); r(25, 6, 3, 4, '#fafafa'); r(25, 6, 3, 1, '#6b3e1f'); break;
+      case 'deskphone': r(24, 6, 6, 3, '#2a2d35'); r(24, 4, 6, 2, '#44444c'); r(25, 7, 1, 1, busy && Math.floor(t * 2) % 2 ? '#30a46c' : '#5d6580'); r(3, 5, 5, 4, '#f0f0e8'); r(4, 6, 3, 1, '#3e8ef7'); break;
+      case 'tablet': r(1, 6, 9, 5, D); r(2, 7, 7, 3, '#44444c'); r(10, 4, 1, 5, '#e6e8ef'); r(25, 5, 1, 4, '#e5484d'); r(26, 5, 1, 4, '#f5b83d'); r(27, 5, 1, 4, '#30a46c'); r(28, 5, 1, 4, '#3e8ef7'); break;
+      case 'dslr': r(24, 5, 7, 4, D); r(25, 4, 2, 1, D); r(26, 6, 3, 3, '#3a3f4b'); r(27, 7, 1, 1, '#79c0ff'); r(30, 5, 1, 1, '#e5484d'); r(3, 6, 4, 3, '#3a3f4b'); r(4, 7, 2, 1, '#79c0ff'); break;
+      case 'tripod': r(27, -6, 5, 4, D); r(31, -5, 1, 2, '#3a3f4b'); r(28, -5, 1, 1, busy && Math.floor(t * 2) % 2 ? '#e5484d' : '#5a1d1f');
+        r(29, -2, 1, 14, '#5d6580'); r(27, 8, 1, 5, '#5d6580'); r(31, 8, 1, 5, '#5d6580'); break;
+      case 'monitor2': r(0, -4, 9, 8, '#2a2d35'); r(1, -3, 7, 5, '#0f1720'); r(1, 0, 3, 1, '#8e4ec6'); r(4, 1, 3, 1, '#30a46c'); r(1, -2, 7, 2, '#3a4a63'); r(4, 4, 1, 2, '#2a2d35'); break;
+      case 'ringlight': r(25, -7, 6, 1, '#fff6c9'); r(25, -1, 6, 1, '#fff6c9'); r(24, -6, 1, 5, '#fff6c9'); r(31, -6, 1, 5, '#fff6c9');
+        r(27, -5, 2, 3, D); r(27, 0, 2, 9, '#5d6580'); r(25, 9, 6, 1, '#5d6580'); break;
+      case 'phonestand': r(25, 2, 4, 6, D); r(26, 3, 2, 4, '#fafafa'); r(26, 4, 2, 1, '#e93d82'); r(25, 8, 4, 1, '#5d6580'); r(3, 6, 5, 3, '#2a2d35'); r(4, 7, 3, 1, '#e93d82'); break;
+      case 'notebook': r(2, 5, 7, 5, '#fafafa'); r(3, 6, 5, 1, '#9aa4b2'); r(3, 8, 4, 1, '#9aa4b2'); r(9, 4, 1, 5, '#3e8ef7'); r(25, 6, 3, 4, '#fafafa'); r(28, 7, 1, 2, '#fafafa'); r(25, 6, 3, 1, '#6b3e1f'); break;
+      case 'duck': r(25, 6, 4, 3, '#f5d000'); r(26, 4, 2, 2, '#f5d000'); r(28, 5, 1, 1, '#f76b15'); r(26, 4, 1, 1, D); r(2, 6, 6, 3, '#2a2d35'); r(3, 7, 4, 1, '#5b5bd6'); break;
+      default: r(25, 6, 3, 4, '#fafafa'); r(25, 6, 3, 1, '#6b3e1f');
+    }
   }
 
   function drawChair(g, d) {
@@ -442,6 +519,14 @@
     let s = sims.get(agent.id);
     if (!s) {
       const look = lookFor(agent.id);
+      if (!look.role) {
+        const taken = new Set([...sims.values()].filter((o) => !o.data.parentId).map((o) => o.look.role.id));
+        const role = PO.roles.pick(agent, taken);
+        look.role = role;
+        look.accessory = role.accessory === 'glasses' ? null : role.accessory;
+        look.glasses = look.glasses || role.accessory === 'glasses';
+        look.roleColor = role.color;
+      }
       s = { id: agent.id, data: agent, look, path: [], dir: 'right', pose: 'stand', frame: 0, dist: 0,
         x: -10, y: DOOR.ty * T + 12, targetKey: null, desk: null, spot: null, nextWander: 0,
         leaving: false, atTarget: false, blinkAt: Math.random() * 4 };
@@ -476,9 +561,10 @@
         // children prefer a desk close to their parent
         const parent = s.data.parentId && sims.get(s.data.parentId);
         const pd = parent && parent.desk;
+        const own = desks.find((d) => !d.owner && d.role === s.look.role);
         const free = desks.filter((d) => !d.owner)
           .sort((a, b) => pd ? (Math.abs(a.tx - pd.tx) + Math.abs(a.ty - pd.ty) * 2) - (Math.abs(b.tx - pd.tx) + Math.abs(b.ty - pd.ty) * 2) : 0);
-        let d = free[0];
+        let d = own || free[0];
         if (!d) { // borrow a desk from someone on a break
           d = desks.find((k) => { const o = sims.get(k.owner); return o && !WORK.has(o.data.status); });
           if (d) sims.get(d.owner).desk = null;
@@ -627,21 +713,31 @@
         out.fillRect(cx - bw / 2, by + bh - S * 0.6, bw, S * 0.6);
         out.fillText(b[0], cx, by + bh / 2);
       }
-      // name tag
+      // name tag + job title
       const nfs = Math.max(8, Math.round(S * 2));
-      out.font = `${nfs}px "Press Start 2P", monospace`;
-      const name = s.data.parentId ? `${s.look.name}·${s.data.role || 'sub'}` : s.look.name;
+      const rfs = Math.max(14, Math.round(S * 4.6));
+      const name = s.look.name;
+      const role = s.look.role;
       const tagY = (s.pose === 'sitDesk' ? s.y + 7 : s.y + 4) * S;
-      const tw = out.measureText(name).width + nfs * 0.8;
-      out.fillStyle = 'rgba(15,17,26,0.72)';
-      out.fillRect(cx - tw / 2, tagY - nfs * 0.75, tw, nfs * 1.5);
+      out.font = `${nfs}px "Press Start 2P", monospace`;
+      const nw = out.measureText(name).width;
+      out.font = `${rfs}px "VT323", monospace`;
+      const rw = out.measureText(role.short).width;
+      const tw = Math.max(nw, rw) + nfs * 0.8;
+      const th = nfs * 1.3 + rfs * 0.95;
+      out.fillStyle = 'rgba(15,17,26,0.78)';
+      out.fillRect(cx - tw / 2, tagY - nfs * 0.75, tw, th);
+      out.fillStyle = role.color;
+      out.fillRect(cx - tw / 2, tagY - nfs * 0.75, tw, Math.max(1, S * 0.5));
+      out.fillText(role.short, cx, tagY + nfs * 0.55 + rfs * 0.45);
+      out.font = `${nfs}px "Press Start 2P", monospace`;
       out.fillStyle = s.id === selectedId ? '#ffe08a' : '#ffffff';
       out.fillText(name, cx, tagY);
     }
     // tooltip for hovered/selected agent
     const s = sims.get(hoverId) || sims.get(selectedId);
     if (s) {
-      const lines = [`${s.look.name} — ${s.data.project}`, `${(s.data.status || '').toUpperCase()}: ${s.data.detail || ''}`];
+      const lines = [`${s.look.name} · ${s.look.role.label} (${s.look.role.ms}) — ${s.data.project}`, `${(s.data.status || '').toUpperCase()}: ${s.data.detail || ''}`];
       const tfs = Math.max(12, Math.round(S * 4.2));
       out.font = `${tfs}px "VT323", monospace`;
       out.textAlign = 'left';

@@ -71,6 +71,7 @@
     if (dir === 'down') drawFront(r, look, opts, frame, pose, top);
     else if (dir === 'up') drawBack(r, look, opts, frame, pose, top);
     else drawSide(r, look, opts, frame, pose, top);
+    if (look.accessory) drawAccessory(r, look, dir, pose, top);
   }
 
   function hairTop(r, look, t) {
@@ -167,6 +168,53 @@
       r(4, 13 + t, 3, 3, look.pants); r(4, 16 + t, 4, 1, SHOE);
     }
   }
+
+  // Job-role accessories, drawn over the base character.
+  const DARK = '#1d1d24';
+  function drawAccessory(r, look, dir, pose, t) {
+    const front = dir === 'down', back = dir === 'up', side = !front && !back;
+    const c = look.roleColor || '#888';
+    switch (look.accessory) {
+      case 'beret':
+        r(1, -1 + t, 8, 2, DARK); r(2, -2 + t, 5, 1, DARK); r(6, -3 + t, 1, 1, DARK);
+        break;
+      case 'beanie':
+        r(1, -1 + t, 8, 3, c); r(1, 1 + t, 8, 1, shade(c, -0.18)); r(4, -2 + t, 2, 1, '#f0f0f0');
+        break;
+      case 'cap':
+        r(1, -1 + t, 8, 3, c);
+        if (front) r(1, 2 + t, 8, 1, shade(c, -0.25));
+        if (side) r(7, 1 + t, 3, 1, shade(c, -0.25));
+        break;
+      case 'headphones':
+        r(1, -1 + t, 8, 1, DARK);
+        if (side) { r(4, 0 + t, 1, 3, DARK); r(3, 3 + t, 3, 3, c); }
+        else { r(0, 0 + t, 1, 3, DARK); r(9, 0 + t, 1, 3, DARK); r(0, 3 + t, 2, 3, c); r(8, 3 + t, 2, 3, c); }
+        break;
+      case 'camera':
+        if (front) { r(3, 8 + t, 1, 2, DARK); r(6, 8 + t, 1, 2, DARK); r(3, 10 + t, 4, 3, DARK); r(4, 11 + t, 2, 1, '#79c0ff'); }
+        else if (side) { r(6, 9 + t, 2, 3, DARK); r(7, 10 + t, 1, 1, '#79c0ff'); }
+        break;
+      case 'tie':
+        if (front) { r(4, 8 + t, 2, 1, '#f0f0f0'); r(4, 9 + t, 2, 3, c); r(5, 12 + t, 1, 1, c); }
+        break;
+      case 'clipboard':
+        if (front && pose !== 'sitDesk') { r(0, 9 + t, 3, 4, '#a0683c'); r(0, 10 + t, 3, 3, '#fafafa'); r(1, 9 + t, 1, 1, '#9aa4b2'); }
+        else if (side) { r(7, 9 + t, 2, 4, '#a0683c'); }
+        break;
+      case 'phone':
+        if (front && pose !== 'sitDesk') { r(8, 10 + t, 2, 3, DARK); r(8, 11 + t, 1, 1, c); }
+        else if (side) { r(7, 10 + t, 2, 2, DARK); }
+        break;
+      case 'hoodie':
+        if (front) { r(3, 8 + t, 1, 3, '#f0f0f0'); r(6, 8 + t, 1, 3, '#f0f0f0'); }
+        if (back) r(2, 7 + t, 6, 2, look.shirtDark);
+        if (side) r(2, 7 + t, 2, 2, look.shirtDark);
+        break;
+      default:
+    }
+  }
+
 
   function shadeSkin(look) { return shade(look.skin, -0.12); }
   function shadeHair(look) { return shade(look.hair, 0.12); }

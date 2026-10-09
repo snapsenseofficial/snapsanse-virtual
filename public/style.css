@@ -62,6 +62,7 @@ body { background: var(--bg); color: var(--text); font: 15px/1.35 system-ui, san
 .who { grid-area: who; min-width: 0; }
 .who b { font-weight: 600; }
 .who i { color: #f778ba; font-style: normal; font-size: 12px; }
+.who .job { display: block; font: 16px var(--term); color: var(--role); line-height: 1.1; }
 .who small { display: block; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pill { grid-area: pill; align-self: start; font: 8px var(--pixel); padding: 4px 6px; background: #2a2f45; color: var(--muted); white-space: nowrap; }
 .card.typing .pill { background: #1f3d2a; color: #7ee787; }

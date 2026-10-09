@@ -99,9 +99,11 @@
     const sel = PO.world.selected;
     $('agents').innerHTML = list.length ? list.map((a) => {
       const look = PO.world.look(a.id);
+      const role = look.role || PO.roles.ASSISTANT;
       return `<button class="card ${a.status} ${a.parentId ? 'child' : ''} ${a.id === sel ? 'sel' : ''}" data-id="${esc(a.id)}">
         <span class="avatar" style="--shirt:${look.shirt};--hair:${look.hair};--skin:${look.skin}"></span>
-        <span class="who"><b>${esc(look.name)}</b>${a.parentId ? ` <i>${esc(a.role || 'sub-agent')}</i>` : ''}<small>${esc(a.project)}</small></span>
+        <span class="who"><b>${esc(look.name)}</b>${a.parentId ? ` <i>sub-agent</i>` : ''}
+          <span class="job" style="--role:${role.color}">${esc(role.label)} · ${esc(role.ms)}</span><small>${esc(a.project)}</small></span>
         <span class="pill">${STATUS_LABEL[a.status] || a.status}</span>
         <span class="detail">${esc(a.detail)}</span>
         <span class="meta">${a.toolCount} tools · ${ago(a.startedAt)}</span>

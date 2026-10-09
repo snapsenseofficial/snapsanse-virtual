@@ -54,3 +54,11 @@ test('watcher parses transcript lines', () => {
   w.handle({ type: 'assistant', message: { content: [{ type: 'text', text: 'Done!' }], stop_reason: 'end_turn' } }, file);
   assert.strictEqual(s.agents.get('s2').status, 'idle');
 });
+
+test('office.config.json maps projects to job roles', () => {
+  const s = new OfficeState({ roles: { 'my-app': 'video-editor' } });
+  s.userPrompt(info, 'Cut a reel');
+  assert.strictEqual(s.agents.get('s1').jobRole, 'video-editor');
+  s.userPrompt({ sessionId: 's9', cwd: '/x/other' }, 'hi');
+  assert.strictEqual(s.agents.get('s9').jobRole, null);
+});

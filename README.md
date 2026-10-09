@@ -12,6 +12,7 @@
 
 | | |
 |---|---|
+| 👔 **12 jawatan kreatif** | Creative Director, Marketing, Designer, Photographer, Videographer, Video Editor, Content Creator, Social Media, Copywriter, Web Dev dan lain-lain — setiap satu dengan meja, aksesori & skrin sendiri. |
 | 🧑‍💻 **Satu sesi = satu watak** | Setiap sesi `claude` dapat watak pixel unik (rambut, kulit, baju dijana dari ID sesi). |
 | 🖥️ **Skrin monitor hidup** | Kod berwarna bila `Edit/Write`, terminal hijau bila `Bash`, dokumen bila `Read/Grep`, browser bila `WebSearch`. |
 | ✋ **"Perlukan anda!"** | Bila Claude tunggu kebenaran, watak angkat tangan, skrin berkelip kuning, kad di panel berdenyut + bunyi chime (pilihan). |
@@ -22,6 +23,36 @@
 | 🌗 **Siang & malam** | Tingkap & jam dinding ikut waktu sebenar anda. |
 | 🎬 **Mod demo** | Agent simulasi — sesuai untuk rakam video/reels tanpa perlu Claude berjalan. |
 | 🔒 **Lokal & selamat** | Hanya baca transcript (read-only), server bind ke `127.0.0.1` sahaja. Tiada data keluar dari komputer anda. |
+
+## 👔 Jawatan / Job roles
+
+Pejabat ada **12 meja, satu untuk setiap jawatan**. Setiap jawatan ada aksesori watak, prop meja dan skrin monitor sendiri:
+
+| Jawatan | Role | Aksesori | Prop meja | Skrin bila bekerja |
+|---|---|---|---|---|
+| Pengarah Kreatif | Creative Director | Beret | Trofi | Moodboard |
+| Pengurus Pemasaran | Marketing Manager | Tali leher | Carta | Graf jualan |
+| Pengurus Projek | Project Manager | Clipboard | Sticky notes | Kanban |
+| Pengurus Akaun Pelanggan | Account Manager | Tali leher | Telefon meja | Inbox |
+| Pereka Grafik | Graphic Designer | Beanie | Tablet lukisan + swatch | Canvas design |
+| Jurugambar | Photographer | Kamera di leher | DSLR | Grid foto |
+| Jurukamera Video | Videographer | Topi | Kamera atas tripod (REC) | Viewfinder |
+| Penyunting Video | Video Editor | Headphone | Monitor kedua | Timeline video |
+| Pencipta Kandungan | Content Creator | Telefon | Ring light | Feed sosial |
+| Pengurus Media Sosial | Social Media Manager | Telefon | Phone stand | Feed sosial |
+| Penulis Iklan | Copywriter | Cermin mata | Buku nota | Dokumen |
+| Pembangun Web | Web Developer | Hoodie | Itik getah 🦆 | Kod |
+
+**Bagaimana agent dapat jawatan:**
+
+1. `office.config.json` — tetapkan sendiri (salin `office.config.example.json`):
+   ```json
+   { "roles": { "reels-2026": "video-editor", "wedding-gallery": "photographer" } }
+   ```
+2. Kata kunci nama folder projek — cth. `reels-editor` → Video Editor, `photo-archive` → Photographer, `brand-kit` → Graphic Designer, `ad-campaign` → Marketing Manager.
+3. Jika tiada padanan → jawatan kosong pertama (Web Developer, Content Creator, Graphic Designer, …).
+
+Sub-agent (`Task`) jadi **Assistant / Pembantu**, atau ikut jawatan jika jenisnya sepadan (cth. `designer`).
 
 ## 🚀 Mula / Quick start
 
@@ -98,13 +129,14 @@ lib/state.js         Model agent & status, heuristik
 lib/watcher.js       Tail transcript JSONL (read-only)
 bin/hook.js          Penghantar hook Claude Code
 bin/install-hooks.js Pasang/buang hooks
-public/              Front-end: sprites.js (watak prosedural), world.js (peta, pathfinding, render), app.js (panel), demo.js
+public/              Front-end: roles.js (jawatan), sprites.js (watak prosedural), world.js (peta, pathfinding, render), app.js (panel), demo.js
 test/                node --test
 ```
 
 ## 🎨 Ubah suai / Customise
 
 - **Logo anda sendiri** — letak fail `public/logo.png` (PNG lutsinar, nisbah lebar ~3:1, contoh 54×15 px atau lebih besar). Ia menggantikan papan tanda pixel SNAPSENSE di dinding secara automatik (mod live & demo). Tanpa fail itu, papan tanda kamera pixel terbina digunakan.
+- **Jawatan** — `ROLES` dalam `public/roles.js` (label, warna, kata kunci, aksesori, prop, skrin)
 - **Nama watak** — `NAMES` dalam `public/sprites.js`
 - **Warna baju/rambut** — `SHIRT`, `HAIR`, `SKIN` dalam `public/sprites.js`
 - **Susun atur pejabat** — `desks`, `plants`, `SPOTS` dalam `public/world.js` (grid 26×16, tile 16px)
