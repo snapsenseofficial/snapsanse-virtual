@@ -109,3 +109,24 @@ body { background: var(--bg); color: var(--text); font: 15px/1.35 system-ui, san
   .panel { border-left: 0; border-top: 2px solid var(--line); }
   .agents { max-height: none; }
 }
+
+/* live crew */
+.crew { padding: 0 10px; display: flex; flex-direction: column; gap: 8px; }
+.crew h2 { padding: 6px 4px 0; }
+.connections { display: flex; flex-direction: column; gap: 6px; }
+.conn-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--card); padding: 8px 10px; border-radius: 10px; font-size: 13px; }
+.conn-row.ok b { color: var(--ok); }
+.conn-row small, .muted { color: var(--muted); font-size: 12px; margin: 0; }
+.conn-row .btn { text-decoration: none; white-space: nowrap; }
+.approvals { display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow: auto; }
+.approval { background: var(--card); border: 2px solid var(--warn); border-radius: 12px; padding: 8px 10px; }
+.ap-head { display: flex; flex-direction: column; }
+.ap-head small { color: var(--muted); font-size: 11px; }
+.approval pre { white-space: pre-wrap; font: 12px/1.4 var(--term); color: #c9d1d9; margin: 6px 0; max-height: 120px; overflow: auto; }
+.ap-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn.ok { background: var(--ok); color: #06210f; border-color: var(--ok); }
+.ap-error { color: #ff7b72; font-size: 12px; margin: 0; }
+.jobs summary { cursor: pointer; font: 700 12px var(--term); color: var(--muted); padding: 4px; }
+.job { background: var(--card); border-radius: 10px; padding: 8px 10px; margin-top: 6px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; }
+.job small { color: var(--muted); font-size: 11px; }
+.job code { font-size: 11px; color: #7ee787; word-break: break-all; }

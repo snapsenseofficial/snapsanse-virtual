@@ -3,3 +3,7 @@ node_modules/
 *.log
 dist/
 office.config.json
+crew/config.json
+crew/secrets/
+crew/data/
+crew/output/

@@ -111,6 +111,10 @@ Pejabat ada **12 meja, satu untuk setiap jawatan**. Setiap jawatan ada aksesori 
 
 Sub-agent (`Task`) jadi **Assistant / Pembantu**, atau ikut jawatan jika jenisnya sepadan (cth. `designer`).
 
+## 🔌 Live crew: TikTok, Google Calendar, Drive & tempahan
+
+Pasukan boleh membuat kerja sebenar untuk SnapSense: statistik dan idea content TikTok, laporan engagement, tempahan dari katalog (Google Form/Sheet), kalendar dan Drive. Agent hanya **membaca dan mencadangkan**. Setiap perubahan menunggu anda klik **Approve** dalam panel *Live crew*. Panduan penuh ada dalam **[crew/SETUP.md](crew/SETUP.md)**.
+
 ## 🚀 Mula / Quick start
 
 Perlu **Node.js 18+** sahaja. Tiada `npm install`.

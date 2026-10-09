@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// SnapSense Pixel Office — a live pixel-art office for your Claude Code agents.
+// SnapSense Virtual Office — a live animated office for your Claude Code agents.
 // Zero dependencies. Run:  node server.js  [--port 4317] [--host 127.0.0.1] [--demo] [--no-watch]
 
 const http = require('http');
@@ -9,6 +9,7 @@ const path = require('path');
 const os = require('os');
 const { OfficeState } = require('./lib/state');
 const { TranscriptWatcher } = require('./lib/watcher');
+const crew = require('./lib/integrations');
 
 const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);
@@ -48,7 +49,9 @@ function loadConfig() {
   }
 }
 
-const state = new OfficeState(loadConfig());
+// Crew workspaces (crew/jobs.json) map to their roles; office.config.json can override.
+const officeConfig = loadConfig();
+const state = new OfficeState({ ...officeConfig, roles: { ...crew.crewRoles(), ...(officeConfig.roles || {}) } });
 const clients = new Set();
 
 function broadcast(msg) {
@@ -102,6 +105,7 @@ const logoUrl = () => (fs.existsSync(path.join(PUBLIC, 'logo.png')) ? 'logo.png'
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
+  if (!DEMO && crew.handle(req, res, url, PORT)) return;
 
   if (url.pathname === '/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
@@ -138,9 +142,11 @@ if (!DEMO && !flag('no-watch')) {
   new TranscriptWatcher(state, roots, { verbose: flag('verbose') }).start();
 }
 
+if (!DEMO) crew.watch((status) => broadcast({ type: 'crew', status }));
+
 server.listen(PORT, HOST, () => {
   const url = `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}/${DEMO ? '?demo' : ''}`;
-  console.log(`\n  🏢 SnapSense Pixel Office is open → ${url}\n`);
+  console.log(`\n  🏢 SnapSense Virtual Office is open → ${url}\n`);
   if (DEMO) console.log('  Demo mode: simulated agents only.\n');
   else console.log('  Watching Claude Code sessions. Start `claude` in any project and watch your agent clock in.\n');
 });

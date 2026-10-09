@@ -25,6 +25,7 @@
     allclear: { mood: 'happy', text: 'ALL CLEAR!', ms: 3000, arms: 'cheer' },
     onmyway: { mood: 'focused', text: 'ON MY WAY!', ms: 3000 },
     comforted: { mood: 'love', ms: 4000 },
+    approval: { mood: 'embarrassed', text: 'APPROVE?', ms: 8000, arms: 'wave' },
   };
   // Workload: this many tool calls inside LOAD_WINDOW seconds sets the desk on fire.
   const LOAD_WINDOW = 20, STRESS_AT = 8, FIRE_AT = 13, FIRE_COOLDOWN = 180;

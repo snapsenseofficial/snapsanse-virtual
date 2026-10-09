@@ -83,6 +83,8 @@
     es.onmessage = (ev) => {
       const msg = JSON.parse(ev.data);
       if (msg.type === 'snapshot' && msg.demo) { es.close(); startDemo(); return; }
+      if (msg.type === 'snapshot') loadCrew();
+      if (msg.type === 'crew') { renderCrew(msg.status); return; }
       handle(msg);
     };
   }
@@ -230,6 +232,65 @@
   try { savedView = localStorage.getItem('po-view') || (location.hash === '#3d' ? '3d' : '2d'); } catch (_) { /* ignore */ }
   if (location.hash === '#3d') savedView = '3d';
   if (savedView === '3d') setView('3d');
+
+  // ---- live crew: connections, approvals, jobs -------------------------------------
+  let sessionToken = null;
+  let crewStatus = null;
+  const greeted = new Set();
+  async function loadCrew() {
+    try {
+      sessionToken = sessionToken || (await (await fetch('api/session')).json()).token;
+      renderCrew(await (await fetch('api/crew')).json());
+    } catch (_) { /* demo or older server */ }
+  }
+
+  function renderCrew(st) {
+    crewStatus = st;
+    $('crew').hidden = false;
+    const conn = (name, label, c, hint) => `<div class="conn-row ${c.connected ? 'ok' : ''}">
+      <span><b>${label}</b> ${c.connected ? '✔ disambung' : c.configured ? 'belum disambung' : `<small>${hint}</small>`}</span>
+      ${c.configured ? `<a class="btn" href="oauth/${name}/start?token=${sessionToken}">${c.connected ? 'Sambung semula' : 'Sambung'}</a>` : ''}</div>`;
+    $('connections').innerHTML = conn('google', 'Google (Calendar, Drive, Sheet)', st.google, 'isi crew/config.json') +
+      conn('tiktok', 'TikTok', st.tiktok, 'isi crew/config.json');
+    const pending = st.approvals.filter((a) => a.status === 'pending');
+    $('approvals').innerHTML = pending.length ? pending.map((a) => `<div class="approval">
+        <div class="ap-head"><b>${esc(a.title)}</b><small>${esc(a.by)} · ${new Date(a.createdAt).toLocaleString()}</small></div>
+        <pre>${esc(a.details)}</pre>
+        <div class="ap-actions">
+          <button class="btn ok" data-ap="${a.id}" data-act="approve">${a.kind === 'reply' ? 'Lulus (saya hantar sendiri)' : 'Approve'}</button>
+          <button class="btn" data-ap="${a.id}" data-act="reject">Reject</button>
+          ${a.kind === 'reply' ? `<button class="btn" data-copy="${esc(a.payload.text)}">Salin</button>` : ''}
+        </div></div>`).join('') : '<p class="muted">Tiada yang menunggu kelulusan.</p>';
+    $('joblist').innerHTML = st.jobs.map((j) => `<div class="job"><b>${esc(j.name)}</b>
+      <small>${esc(j.workspace)} · ${esc(JSON.stringify(j.schedule))}</small>
+      <code>cd crew/workspaces/${esc(j.workspace)} &amp;&amp; claude "${esc(j.prompt)}"</code></div>`).join('');
+    // whoever proposed something waves at you
+    for (const a of pending) {
+      if (greeted.has(a.id)) continue;
+      greeted.add(a.id);
+      const agent = [...agents.values()].find((x) => x.project === a.by);
+      if (agent) PO.world.emote(agent.id, 'approval');
+    }
+  }
+
+  $('approvals').addEventListener('click', async (e) => {
+    const copy = e.target.closest('[data-copy]');
+    if (copy) { try { await navigator.clipboard.writeText(copy.dataset.copy); copy.textContent = 'Disalin ✔'; } catch (_) { /* clipboard blocked */ } return; }
+    const b = e.target.closest('[data-ap]');
+    if (!b) return;
+    b.disabled = true; b.textContent = '…';
+    const r = await fetch('api/approvals/decide', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Office-Token': sessionToken },
+      body: JSON.stringify({ id: b.dataset.ap, action: b.dataset.act }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { b.disabled = false; b.textContent = 'Cuba lagi'; alertBox(j.error || 'Gagal'); }
+    loadCrew();
+  });
+  function alertBox(msg) {
+    const p = document.createElement('p'); p.className = 'ap-error'; p.textContent = msg;
+    $('approvals').prepend(p); setTimeout(() => p.remove(), 8000);
+  }
 
   setInterval(renderPanel, 5000);
 })(window.PO = window.PO || {});
