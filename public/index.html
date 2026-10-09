@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SnapSense Pixel Office</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><rect x='2' y='0' width='4' height='2' fill='%232b1d14'/><rect x='2' y='2' width='4' height='2' fill='%23f6d5b8'/><rect x='1' y='4' width='6' height='3' fill='%23e5484d'/><rect x='2' y='7' width='4' height='1' fill='%2326324a'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo" aria-hidden="true"></span><span>SNAPSENSE <em>PIXEL OFFICE</em></span></div>
+    <div class="stats" id="stats"></div>
+    <div class="actions">
+      <button id="sound" class="btn" aria-pressed="false" title="Chime when an agent needs your approval">🔕 Sound off</button>
+      <span id="conn" class="conn">● connecting…</span>
+    </div>
+  </header>
+  <main class="layout">
+    <section class="stage" aria-label="Office floor">
+      <canvas id="office"></canvas>
+    </section>
+    <aside class="panel">
+      <h2>Agents</h2>
+      <div id="agents" class="agents"></div>
+      <h2>Activity</h2>
+      <ol id="log" class="log"></ol>
+    </aside>
+  </main>
+  <script src="sprites.js"></script>
+  <script src="world.js"></script>
+  <script src="demo.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
