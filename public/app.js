@@ -23,6 +23,7 @@
     switch (msg.type) {
       case 'snapshot':
         agents.clear(); log.length = 0; PO.world.reset();
+        if (msg.logo) PO.world.setLogo(msg.logo);
         msg.agents.forEach((a) => { agents.set(a.id, a); PO.world.upsert(a, { instant: true }); });
         log.push(...msg.log);
         break;
@@ -50,6 +51,10 @@
     $('conn').textContent = '● demo mode';
     $('conn').className = 'conn demo';
     PO.demo.start(handle);
+    // demo recordings should still show your own logo when the server has one
+    if (location.protocol.startsWith('http') && !window.PO_FORCE_DEMO) {
+      fetch('api/state').then((r) => r.json()).then((j) => PO.world.setLogo(j.logo)).catch(() => {});
+    }
   }
 
   const params = new URLSearchParams(location.search);

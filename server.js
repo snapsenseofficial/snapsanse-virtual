@@ -83,12 +83,15 @@ function serveStatic(req, res) {
   });
 }
 
+// Optional brand logo shown on the office wall sign.
+const logoUrl = () => (fs.existsSync(path.join(PUBLIC, 'logo.png')) ? 'logo.png' : null);
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
 
   if (url.pathname === '/events') {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
-    res.write(`data: ${JSON.stringify({ type: 'snapshot', demo: DEMO, ...state.snapshot() })}\n\n`);
+    res.write(`data: ${JSON.stringify({ type: 'snapshot', demo: DEMO, logo: logoUrl(), ...state.snapshot() })}\n\n`);
     clients.add(res);
     const ping = setInterval(() => res.write(': ping\n\n'), 20000);
     req.on('close', () => { clearInterval(ping); clients.delete(res); });
@@ -97,7 +100,7 @@ const server = http.createServer((req, res) => {
 
   if (url.pathname === '/api/state') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ demo: DEMO, ...state.snapshot() }));
+    return res.end(JSON.stringify({ demo: DEMO, logo: logoUrl(), ...state.snapshot() }));
   }
 
   if (url.pathname === '/hook' && req.method === 'POST') {

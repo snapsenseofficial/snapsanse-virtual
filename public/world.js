@@ -115,7 +115,13 @@
     r(18 * T + 4, 8 * T + 2, 6 * T - 8, 6 * T - 6, '#3d5674');
     r(18 * T + 6, 8 * T + 4, 6 * T - 12, 6 * T - 10, '#4f6d8f');
     for (let y = 8 * T + 8; y < 14 * T - 6; y += 6) for (let x = 18 * T + 10; x < 24 * T - 8; x += 6) r(x, y, 2, 2, '#5d7ea3');
-    // work-area carpet strips under desks rows
+    // SnapSense camera emblem woven into the rug
+    {
+      const ex = 21 * T - 2, ey = 13 * T - 6;
+      r(ex + 2, ey, 4, 1, '#f5b83d'); r(ex, ey + 1, 14, 7, '#f5b83d');
+      r(ex + 4, ey + 2, 6, 5, '#3d5674'); r(ex + 5, ey + 3, 4, 3, '#f5b83d'); r(ex + 6, ey + 4, 2, 1, '#3d5674');
+      r(ex + 11, ey + 2, 2, 1, '#3d5674');
+    }
     // top wall
     r(0, 0, W, 32, '#ece1cf');
     r(0, 0, W, 3, '#5b4636');
@@ -163,6 +169,59 @@
     }
     g.fillStyle = '#5b4636'; g.fillRect(x + 15, 6, 2, 17); g.fillRect(x + 2, 14, 28, 1);
     g.fillStyle = '#e6d6bd'; g.fillRect(x - 1, 25, 34, 2);
+  }
+
+  // ---- SnapSense brand ---------------------------------------------------------
+  // Drop a logo at public/logo.png to replace the built-in pixel sign.
+  const FONT = {
+    S: ['###', '#..', '###', '..#', '###'], N: ['#..#', '##.#', '#.##', '#..#', '#..#'],
+    A: ['.#.', '#.#', '###', '#.#', '#.#'], P: ['##.', '#.#', '##.', '#..', '#..'],
+    E: ['###', '#..', '##.', '#..', '###'],
+  };
+  const logoImg = new Image();
+  let logoReady = false;
+  logoImg.onload = () => { logoReady = logoImg.naturalWidth > 0; };
+  function setLogo(url) { if (url && logoImg.src !== url) logoImg.src = url; }
+
+  function pixelText(g, text, x, y, color) {
+    g.fillStyle = color;
+    for (const ch of text) {
+      (FONT[ch] || []).forEach((row, j) => {
+        for (let i = 0; i < row.length; i++) if (row[i] === '#') g.fillRect(x + i, y + j, 1, 1);
+      });
+      x += (FONT[ch] ? FONT[ch][0].length : 3) + 1;
+    }
+    return x;
+  }
+
+  function drawCamera(g, x, y, flash) {
+    g.fillStyle = '#e6e8ef'; g.fillRect(x + 2, y, 3, 1); g.fillRect(x, y + 1, 11, 6);
+    g.fillStyle = '#9aa4b2'; g.fillRect(x, y + 6, 11, 1);
+    g.fillStyle = '#2a2d35'; g.fillRect(x + 3, y + 2, 5, 4); g.fillRect(x + 4, y + 1, 3, 6);
+    g.fillStyle = '#79c0ff'; g.fillRect(x + 4, y + 3, 3, 2);
+    g.fillStyle = '#ffffff'; g.fillRect(x + 4, y + 3, 1, 1);
+    g.fillStyle = flash ? '#fff6c9' : '#f5b83d'; g.fillRect(x + 9, y + 2, 1, 1);
+  }
+
+  // Backlit wall sign; the camera flash fires every few seconds.
+  function drawBrandSign(g, x, t) {
+    const w = 58, y = 4, h = 19;
+    const flash = (t % 7) < 0.12;
+    g.fillStyle = '#3b2c1f'; g.fillRect(x, y, w, h);
+    g.fillStyle = '#1d2131'; g.fillRect(x + 1, y + 1, w - 2, h - 2);
+    g.fillStyle = 'rgba(245,184,61,0.25)'; g.fillRect(x - 1, y + h, w + 2, 1);
+    if (logoReady) {
+      const k = Math.min((w - 4) / logoImg.naturalWidth, (h - 4) / logoImg.naturalHeight);
+      const lw = Math.round(logoImg.naturalWidth * k), lh = Math.round(logoImg.naturalHeight * k);
+      g.imageSmoothingEnabled = false;
+      g.drawImage(logoImg, x + Math.round((w - lw) / 2), y + Math.round((h - lh) / 2), lw, lh);
+      return false;
+    }
+    drawCamera(g, x + 4, y + 6, flash);
+    const tx = pixelText(g, 'SNAP', x + 18, y + 7, '#f5b83d');
+    pixelText(g, 'SENSE', tx, y + 7, '#e6e8ef');
+    g.fillStyle = '#f5b83d'; g.fillRect(x + 18, y + 14, 37, 1);
+    return flash;
   }
 
   function drawClock(g, cx, cy, now) {
@@ -496,7 +555,8 @@
     drawWindow(g, 4 * T, t, now);
     drawWindow(g, 12 * T, t, now);
     drawWhiteboard(g, 7 * T, sims);
-    drawClock(g, 16 * T + 8, 14, now);
+    drawClock(g, 2 * T + 8, 14, now);
+    const flash = drawBrandSign(g, 14 * T + 2, t);
 
     const at = (name) => [...sims.values()].some((s) => s.atTarget && s.spot && s.spot.name.startsWith(name) && !WORK.has(s.data.status));
     const items = [];
@@ -530,6 +590,8 @@
       } });
     }
     items.sort((a, b) => a.y - b.y).forEach((it) => it.draw());
+
+    if (flash) { g.fillStyle = 'rgba(255,250,230,0.07)'; g.fillRect(0, 0, W, H); }
 
     // night tint
     const hr = now.getHours();
@@ -654,7 +716,7 @@
   }
 
   PO.world = {
-    init, upsert, remove, reset, select,
+    init, upsert, remove, reset, select, setLogo,
     look: (id) => (sims.get(id) ? sims.get(id).look : lookFor(id)),
     get selected() { return selectedId; },
   };

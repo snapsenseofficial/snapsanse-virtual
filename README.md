@@ -18,6 +18,7 @@
 | 👥 **Sub-agent** | Bila Claude guna `Task`/`Agent`, seorang "intern" masuk pejabat, duduk berdekatan, dan keluar bila siap. |
 | ☕ **Rehat** | Agent yang idle pergi ke mesin kopi, sofa, rak buku, mesin arcade atau tingkap. |
 | 📋 **Papan Kanban** | Whiteboard di dinding tunjuk sticky note setiap agent: Bekerja / Tunggu / Idle. |
+| 📸 **Papan tanda SnapSense** | Logo kamera pixel di dinding (flash berkelip!) dan emblem pada karpet lounge — atau guna logo anda sendiri. |
 | 🌗 **Siang & malam** | Tingkap & jam dinding ikut waktu sebenar anda. |
 | 🎬 **Mod demo** | Agent simulasi — sesuai untuk rakam video/reels tanpa perlu Claude berjalan. |
 | 🔒 **Lokal & selamat** | Hanya baca transcript (read-only), server bind ke `127.0.0.1` sahaja. Tiada data keluar dari komputer anda. |
@@ -103,6 +104,7 @@ test/                node --test
 
 ## 🎨 Ubah suai / Customise
 
+- **Logo anda sendiri** — letak fail `public/logo.png` (PNG lutsinar, nisbah lebar ~3:1, contoh 54×15 px atau lebih besar). Ia menggantikan papan tanda pixel SNAPSENSE di dinding secara automatik (mod live & demo). Tanpa fail itu, papan tanda kamera pixel terbina digunakan.
 - **Nama watak** — `NAMES` dalam `public/sprites.js`
 - **Warna baju/rambut** — `SHIRT`, `HAIR`, `SKIN` dalam `public/sprites.js`
 - **Susun atur pejabat** — `desks`, `plants`, `SPOTS` dalam `public/world.js` (grid 26×16, tile 16px)
