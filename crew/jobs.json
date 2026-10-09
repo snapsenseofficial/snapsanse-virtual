@@ -1,5 +1,5 @@
 {
-  "_help": "Each job runs Claude Code headless in workspaces/<workspace>. The office shows it as the crew member for <role>. schedule: {\"at\": [\"HH:MM\"], \"days\": [\"mon\",...]} or {\"every\": \"30m\", \"between\": \"09:00-21:00\"}. Times use timezone in config.json.",
+  "_help": "The crew's tasks. Run one with: cd workspaces/<workspace> && claude \"<prompt>\" (or schedule it yourself, see SETUP.md section 5). The office shows it as the crew member for <role>. schedule: {\"at\": [\"HH:MM\"], \"days\": [\"mon\",...]} or {\"every\": \"30m\", \"between\": \"09:00-21:00\"}. Times use timezone in config.json.",
   "jobs": [
     {
       "id": "tiktok-daily", "name": "Statistik TikTok harian", "workspace": "tiktok-analytics", "role": "social-media",
