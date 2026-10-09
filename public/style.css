@@ -18,6 +18,8 @@ body { background: var(--bg); color: var(--text); font: 15px/1.35 system-ui, san
 .topbar { display: flex; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 2px solid var(--line); background: #12141f; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 10px; font: 11px var(--pixel); letter-spacing: 1px; }
 .brand em { color: var(--accent); font-style: normal; }
+.brand img { height: 13px; width: auto; display: block; }
+[hidden] { display: none !important; }
 .logo { width: 16px; height: 16px; background:
   linear-gradient(#2b1d14 0 0) 4px 0/8px 4px no-repeat,
   linear-gradient(#f6d5b8 0 0) 4px 4px/8px 4px no-repeat,
@@ -86,6 +88,8 @@ body { background: var(--bg); color: var(--text); font: 15px/1.35 system-ui, san
 .log .waiting .x { color: var(--warn); }
 .log .error .x { color: #ff7b72; }
 .log .prompt .x { color: #d2a8ff; }
+.log .fire .x { color: #ff8a4c; }
+.log .rescue .x { color: #7ee787; }
 
 @media (max-width: 900px) {
   .layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }

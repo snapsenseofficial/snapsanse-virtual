@@ -100,6 +100,17 @@
           later(3500 + Math.random() * 3000, () => { set(a, 'running', '$ npm run build', 'Bash'); later(2500, next); });
           return;
         }
+        if (r < 0.26 && r >= 0.2) { // crunch time: a burst of rapid tool calls (may overheat the computer)
+          let n = 15;
+          const burst = () => {
+            if (!agents.has(a.id)) return;
+            const [st, detail, tool] = pick(SCRIPT.slice(1))();
+            set(a, st, detail, tool);
+            if (--n > 0) later(200, burst); else later(2500, next);
+          };
+          burst();
+          return;
+        }
         if (r < 0.2 && agents.size < 12) {
           set(a, 'delegating', 'Delegate: explore the codebase', 'Task');
           const child = spawn(a);

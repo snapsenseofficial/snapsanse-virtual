@@ -11,12 +11,20 @@
   };
   const KIND_ICON = {
     typing: '✎', reading: '📖', running: '▶', browsing: '🌐', planning: '☑', delegating: '👥',
-    waiting: '⚠', prompt: '💬', done: '✓', error: '✖', session: '🚪', thinking: '…',
+    waiting: '⚠', prompt: '💬', done: '✓', error: '✖', session: '🚪', thinking: '…', fire: '🔥', rescue: '🧯',
   };
+  const TOOL_KINDS = new Set(['typing', 'reading', 'running', 'browsing', 'planning', 'delegating']);
   let soundOn = false;
   let renderQueued = false;
 
   PO.world.init($('office'), (id) => { renderPanel(); if (id) scrollToCard(id); });
+  // office incidents (overheated computers, rescues) go into the activity feed
+  PO.world.onEvent((e) => {
+    const a = agents.get(e.agentId);
+    log.push({ ts: Date.now(), agentId: e.agentId, project: a ? a.project : 'Facilities', kind: e.kind, text: e.text });
+    if (e.kind === 'fire') chime();
+    queueRender();
+  });
 
   // ---- events -------------------------------------------------------------------
   function handle(msg) {
@@ -40,6 +48,8 @@
         break;
       case 'log':
         log.push(msg.entry);
+        if (['prompt', 'done', 'error'].includes(msg.entry.kind)) PO.world.emote(msg.entry.agentId, msg.entry.kind);
+        if (TOOL_KINDS.has(msg.entry.kind)) PO.world.noteTool(msg.entry.agentId);
         if (log.length > 200) log.shift();
         break;
       default:
@@ -52,7 +62,9 @@
     $('conn').className = 'conn demo';
     PO.demo.start(handle);
     // demo recordings should still show your own logo when the server has one
-    if (location.protocol.startsWith('http') && !window.PO_FORCE_DEMO) {
+    if (window.PO_LOGO) PO.world.setLogo(window.PO_LOGO);
+    else if (location.protocol === 'file:') PO.world.setLogo('logo.png');
+    else if (location.protocol.startsWith('http')) {
       fetch('api/state').then((r) => r.json()).then((j) => PO.world.setLogo(j.logo)).catch(() => {});
     }
   }
