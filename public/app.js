@@ -70,7 +70,9 @@
   }
 
   const params = new URLSearchParams(location.search);
-  if (params.has('demo') || location.protocol === 'file:' || window.PO_FORCE_DEMO) {
+  if (window.PO_CLOUD && !params.has('demo')) {
+    startCloud();
+  } else if (params.has('demo') || location.protocol === 'file:' || window.PO_FORCE_DEMO) {
     startDemo();
   } else {
     let opened = false;
@@ -233,6 +235,155 @@
   if (location.hash === '#3d') savedView = '3d';
   if (savedView === '3d') setView('3d');
 
+  // ---- cloud office: a published page fed by the crew's cloud routines -------------
+  // The routines write to this page's database (crew status, activity log,
+  // proposals); approving a proposal runs it with your own Google connectors.
+  const CLOUD = window.PO_CLOUD || null;
+  let cloud = null;
+  const STALE_MS = 40 * 60 * 1000;
+  const BUSY = new Set(['typing', 'reading', 'running', 'browsing', 'thinking', 'planning', 'delegating', 'waiting']);
+
+  function cloudAgent(m, d, loadedAt) {
+    const job = CLOUD.jobs.find((j) => j.mascot === m.id);
+    let status = (d && d.status) || 'idle';
+    let detail = (d && d.detail) || (job ? `Tugasan seterusnya: ${job.when}` : 'Sedia membantu');
+    const updated = d && d.updatedAt ? Date.parse(d.updatedAt) : loadedAt;
+    if (BUSY.has(status) && Date.now() - updated > STALE_MS) { status = 'idle'; detail = 'Rehat'; }
+    return {
+      id: `crew-${m.id}`, project: job ? job.workspace : m.role, jobRole: m.role, status, detail,
+      toolCount: (d && d.toolCount) || 0, startedAt: (d && Date.parse(d.startedAt)) || loadedAt, lastActive: updated,
+    };
+  }
+
+  async function startCloud() {
+    $('conn').textContent = '● menyambung…'; $('conn').className = 'conn';
+    if (window.PO_LOGO) PO.world.setLogo(window.PO_LOGO);
+    const api = window.claude && window.claude.use ? window.claude : null;
+    const db = api ? await api.use('db').catch(() => null) : null;
+    if (!db) { startDemo(); $('conn').textContent = '● demo — buka dalam Claude untuk live'; return; }
+    const mcp = await api.use('mcp').catch(() => null);
+    cloud = { db, mcp, docs: {}, approvals: [], loadedAt: Date.now(), tools: null };
+    $('conn').textContent = '● live'; $('conn').className = 'conn live';
+    const crew = PO.mascots.CREW;
+    handle({ type: 'snapshot', agents: crew.map((m) => cloudAgent(m, null, cloud.loadedAt)), log: [] });
+
+    const fail = (what) => (e) => { $('conn').textContent = `● ${what}: ${e.code || 'ralat'}`; $('conn').className = 'conn off'; };
+    db.collection('crew').onSnapshot((snap) => {
+      snap.docs.forEach((doc) => {
+        const m = crew.find((x) => x.id === doc.id);
+        if (!m) return;
+        cloud.docs[doc.id] = doc.data();
+        handle({ type: 'agent', agent: cloudAgent(m, doc.data(), cloud.loadedAt) });
+      });
+      renderCloud();
+    }, fail('crew'));
+
+    let first = true;
+    db.collection('log').orderBy('ts', 'desc').limit(60).onSnapshot((snap) => {
+      const added = snap.docChanges().filter((c) => c.type === 'added').map((c) => c.doc.data())
+        .sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts));
+      for (const e of added) {
+        const entry = { ts: Date.parse(e.ts) || Date.now(), agentId: `crew-${e.by}`, project: e.by, kind: e.kind || 'note', text: e.text || '' };
+        if (first) { log.push(entry); continue; }
+        handle({ type: 'log', entry });
+      }
+      if (first) { log.sort((a, b) => a.ts - b.ts); first = false; queueRender(); }
+    }, fail('log'));
+
+    db.collection('approvals').orderBy('createdAt', 'desc').limit(40).onSnapshot((snap) => {
+      cloud.approvals = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      renderCloud();
+    }, fail('approvals'));
+
+    if (mcp) mcp.listTools().then((r) => { cloud.tools = r.servers; renderCloud(); }).catch(() => {});
+    setInterval(() => { for (const m of crew) handle({ type: 'agent', agent: cloudAgent(m, cloud.docs[m.id], cloud.loadedAt) }); }, 60000);
+  }
+
+  function serverState(name) {
+    if (!cloud.mcp) return 'tiada';
+    const s = (cloud.tools || []).find((x) => x.server === name);
+    if (!s) return cloud.tools ? 'belum disambung' : '…';
+    return s.authStatus === 'needs_reauth' ? 'perlu log masuk semula' : 'sedia';
+  }
+
+  function renderCloud() {
+    if (!cloud) return;
+    $('crew').hidden = false;
+    $('connections').innerHTML = ['Google Calendar', 'Google Drive'].map((n) => {
+      const st = serverState(n);
+      return `<div class="conn-row ${st === 'sedia' ? 'ok' : ''}"><span><b>${n}</b> ${st === 'sedia' ? '✔' : `<small>${st}</small>`}</span></div>`;
+    }).join('');
+    const pending = cloud.approvals.filter((a) => a.status === 'pending');
+    $('approvals').innerHTML = pending.length ? pending.map((a) => {
+      const m = PO.mascots.get(a.by);
+      return `<div class="approval">
+        <div class="ap-head"><b>${esc(a.title)}</b><small>${esc(m ? m.name : a.by)} · ${esc(new Date(a.createdAt).toLocaleString())}</small></div>
+        <pre>${esc(a.details || (a.payload && a.payload.text) || '')}</pre>
+        <div class="ap-actions">
+          <button class="btn ok" data-cap="${esc(a.id)}" data-act="approve">${a.kind === 'reply' ? 'Lulus (saya hantar sendiri)' : a.kind === 'note' ? 'Faham' : 'Approve'}</button>
+          ${a.kind === 'note' ? '' : `<button class="btn" data-cap="${esc(a.id)}" data-act="reject">Reject</button>`}
+          ${a.kind === 'reply' ? `<button class="btn" data-copy="${esc(a.payload && a.payload.text)}">Salin</button>` : ''}
+        </div></div>`;
+    }).join('') : '<p class="muted">Tiada yang menunggu kelulusan.</p>';
+    $('joblist').innerHTML = CLOUD.jobs.map((j) => {
+      const d = cloud.docs[j.mascot] || {};
+      const m = PO.mascots.get(j.mascot);
+      return `<div class="job"><b>${esc(m ? m.name : j.mascot)} — ${esc(j.name)}</b>
+        <small>${esc(j.when)}${d.lastRunAt ? ` · terakhir ${esc(new Date(d.lastRunAt).toLocaleString())}` : ''}</small>
+        ${d.lastSummary ? `<span class="muted">${esc(d.lastSummary)}</span>` : ''}
+        ${j.triggerId && cloud.mcp ? `<button class="btn" data-run="${esc(j.triggerId)}">Jalankan sekarang</button>` : ''}</div>`;
+    }).join('');
+    if (!$('jobs').dataset.opened) { $('jobs').open = true; $('jobs').dataset.opened = '1'; }
+    for (const a of pending) {
+      if (greeted.has(a.id)) continue;
+      greeted.add(a.id);
+      PO.world.emote(`crew-${a.by}`, 'approval');
+    }
+  }
+
+  const MCP_HELP = {
+    needs_reauth: 'Log masuk semula Google di claude.ai → Settings → Connectors.',
+    server_not_connected: 'Sambungkan Google di claude.ai → Settings → Connectors.',
+    not_in_manifest: 'Benarkan akses Google untuk halaman ini (menu Permissions halaman).',
+    approval_required: 'Klik Approve sekali lagi dan benarkan bila ditanya.',
+    selection_required: 'Pilih akaun Google bila diminta, kemudian cuba lagi.',
+  };
+
+  async function decideCloud(id, act) {
+    const a = cloud.approvals.find((x) => x.id === id);
+    if (!a) return;
+    const ref = cloud.db.doc(`approvals/${id}`);
+    const stamp = new Date().toISOString();
+    if (act === 'reject') return ref.update({ status: 'rejected', decidedAt: stamp });
+    const p = a.payload || {};
+    let result = null;
+    if (a.kind === 'calendar-event') {
+      const input = { summary: p.title, startTime: p.start, endTime: p.end, description: p.description || '', location: p.location || '', timeZone: CLOUD.timezone };
+      if (p.calendarId) input.calendarId = p.calendarId;
+      const r = await cloud.mcp.callTool('Google Calendar', 'create_event', input);
+      result = { link: (r.payload && (r.payload.htmlLink || r.payload.viewUrl)) || null };
+    } else if (a.kind === 'drive-upload') {
+      const input = { title: p.name, textContent: p.text || '', contentMimeType: 'text/plain' };
+      if (p.folderId || CLOUD.reportsFolderId) input.parentId = p.folderId || CLOUD.reportsFolderId;
+      const r = await cloud.mcp.callTool('Google Drive', 'create_file', input);
+      result = { link: (r.payload && r.payload.viewUrl) || null };
+    }
+    await ref.update({ status: 'approved', decidedAt: stamp, result });
+  }
+
+  $('joblist').addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-run]');
+    if (!b || !cloud || !cloud.mcp) return;
+    b.disabled = true; b.textContent = 'Memanggil…';
+    try {
+      await cloud.mcp.callTool('Claude Code Remote', 'fire_trigger', { trigger_id: b.dataset.run });
+      b.textContent = 'Sedang dijalankan ✔';
+    } catch (err) {
+      b.disabled = false; b.textContent = 'Cuba lagi';
+      alertBox(MCP_HELP[err.code] || err.message || 'Gagal');
+    }
+  });
+
   // ---- live crew: connections, approvals, jobs -------------------------------------
   let sessionToken = null;
   let crewStatus = null;
@@ -276,6 +427,15 @@
   $('approvals').addEventListener('click', async (e) => {
     const copy = e.target.closest('[data-copy]');
     if (copy) { try { await navigator.clipboard.writeText(copy.dataset.copy); copy.textContent = 'Disalin ✔'; } catch (_) { /* clipboard blocked */ } return; }
+    const cb = e.target.closest('[data-cap]');
+    if (cb && cloud) {
+      cb.disabled = true; cb.textContent = '…';
+      try { await decideCloud(cb.dataset.cap, cb.dataset.act); } catch (err) {
+        cb.disabled = false; cb.textContent = 'Cuba lagi';
+        alertBox(MCP_HELP[err.code] || err.message || 'Gagal');
+      }
+      return;
+    }
     const b = e.target.closest('[data-ap]');
     if (!b) return;
     b.disabled = true; b.textContent = '…';
