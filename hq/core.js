@@ -5,7 +5,7 @@
 
   const HQ = window.HQ = window.HQ || {};
   const TZ = 'Asia/Kuala_Lumpur';
-  const COLLECTIONS = ['todos', 'content', 'campaigns', 'copies', 'quotes', 'packages', 'settings'];
+  const COLLECTIONS = ['todos', 'content', 'campaigns', 'copies', 'insights', 'plans', 'weddingDates', 'competitors', 'quotes', 'packages', 'settings'];
 
   // ---------- crew (assignees) ----------
   HQ.CREW = [
@@ -210,12 +210,12 @@
       document.getElementById('main').appendChild(root);
       try { t.mount(root); } catch (e) { console.error(e); root.innerHTML = `<p class="empty">Bahagian ini gagal dimuat: ${HQ.esc(e.message)}</p>`; }
     }
-    if (t.onShow) t.onShow(root);
     window.scrollTo(0, 0);
+    if (t.onShow) t.onShow(root);
   }
 
   HQ.start = () => {
-    const order = ['utama', 'todo', 'content', 'copy', 'quote', 'settings'];
+    const order = ['utama', 'todo', 'content', 'insight', 'copy', 'quote', 'settings'];
     tabs.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
     document.getElementById('nav').innerHTML = tabs.map((t) =>
       `<a href="#${t.id}" data-tab="${t.id}"><span class="nav-ico" aria-hidden="true">${t.icon || ''}</span><span>${HQ.esc(t.label)}</span></a>`).join('');

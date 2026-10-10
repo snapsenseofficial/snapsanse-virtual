@@ -11,6 +11,7 @@ Folder: this directory. Files:
   core.js, overview.js, todo.js, content.js, quote.js, settings.js, then calls `HQ.start()`.
 - `style.css` — Mira (graphic designer) writes it: tokens + shared component classes below.
 - Also `copy.js` (tab id `copy`, label "Copywriting") — Farid.
+- Also `insight.js` (tab id `insight`, label "Insight & Plan") — Farid.
 - Each module = one plain-JS IIFE file that calls `HQ.tab(id, { label, icon, mount(root), onShow?(root) })`.
   Tab ids: `utama` (overview.js), `todo` (todo.js), `content` (content.js), `quote` (quote.js), `settings` (settings.js).
   `icon` = one short inline SVG string (20x20, stroke="currentColor", fill="none", stroke-width 1.8) — no emoji.
@@ -51,6 +52,21 @@ Dates are `'YYYY-MM-DD'` strings (Malaysia time, use `HQ.today()`), timestamps I
 
 `copies/<id>`: { no:number (1..30), title, type:'Caption TikTok'|'Caption IG'|'Iklan Meta'|'Iklan TikTok'|'WhatsApp broadcast'|'Story'|'Carousel'|'Bio'|'DM / balas komen'|'Google Business'|'Facebook post',
   service: package id or 'umum', pillar?, month:'YYYY-MM', date?:'YYYY-MM-DD', headline, body (multi-line text), cta, hashtags, notes?, status:'draf'|'diluluskan'|'digunakan', by:'white' (Aina), createdAt }
+
+`insights/<id>`: { title, platform:'tiktok'|'instagram'|'facebook'|'youtube'|'threads'|'umum', category:'Trend'|'Pesaing'|'Hashtag'|'Masa posting'|'Algoritma'|'Musim & tarikh'|'Audiens'|'Format',
+  finding (2–4 sentences), action (what SnapSense should do), impact:'tinggi'|'sederhana'|'rendah', sources:[{title, url}], by: crew id, createdAt }
+
+`weddingDates/<id>`: { date:'YYYY-MM-DD', day:'Sab', label:'12.12.26', tags:['Tarikh cantik'|'Cuti sekolah'|'Hujung minggu'|'Hujung minggu panjang'|'Cuti umum'|'Malam Jumaat'], demand:'sangat tinggi'|'tinggi'|'sederhana',
+  why, tip (which package to promote / booking advice), sources:[{title,url}], by, createdAt }
+
+`competitors/<id>`: { name, type:'photographer'|'videographer'|'agency'|'creator', handles:{instagram,tiktok,facebook,youtube,website}, location, niche:[..],
+  followers:{instagram,tiktok,facebook} (number|null — only when a public source shows it), followersAsOf, followersSource, contentPillars:[..], formats:[..],
+  postingFreq, priceInfo, strengths, lessons, sources:[{title,url}], by, createdAt }
+
+`plans/<id>`: { name, start:'YYYY-MM-DD', end:'YYYY-MM-DD', goal, summary, kpis:[string],
+  weeks:[{ week:number, dates:'10–16 Okt', focus, platformMix (e.g. 'TikTok 7 · IG feed 3 · IG story 7 · FB 3'), crewTasks:[{ who: crew id, task }] }],
+  days:[{ date:'YYYY-MM-DD', theme, tiktok, igFeed, igStory, facebook, task (offline/production task), who: crew id }],
+  createdAt }
 
 `packages/<id>`: { cat:'wedding'|'konvo'|'potret'|'produk'|'auto'|'content'|'event'|'addon', name, price:number, unit?:'jam'|'bulan'|'seorang'|'reel',
   min?:number, cover, inc:[string], popular?:bool }   (seeded from the SnapSense catalogue — see seed/packages.json)

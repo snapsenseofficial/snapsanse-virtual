@@ -874,3 +874,7 @@ table.table {
   .store-badge { font-size: 0; }
   .store-badge::before { content: "●"; font-size: 12px; }
 }
+@media (max-width: 1360px) and (min-width: 721px) {
+  .nav a { padding: 0 7px; gap: 5px; font-size: 13px; }
+  .topbar-end .store-badge { display: none; }
+}
