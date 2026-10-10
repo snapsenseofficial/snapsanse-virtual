@@ -1,0 +1,30 @@
+{
+  "_help": "The crew's tasks. Run one with: cd workspaces/<workspace> && claude \"<prompt>\" (or schedule it yourself, see SETUP.md section 5). The office shows it as the crew member for <role>. schedule: {\"at\": [\"HH:MM\"], \"days\": [\"mon\",...]} or {\"every\": \"30m\", \"between\": \"09:00-21:00\"}. Times use timezone in config.json.",
+  "jobs": [
+    {
+      "id": "tiktok-daily", "name": "Statistik TikTok harian", "workspace": "tiktok-analytics", "role": "social-media",
+      "schedule": { "at": ["09:00"] },
+      "prompt": "Jalankan tugasan harian: ambil snapshot TikTok, bandingkan dengan semalam, tulis laporan hari ini dan cadangkan muat naik ke Drive."
+    },
+    {
+      "id": "content-ideas", "name": "Idea content & caption", "workspace": "tiktok-content", "role": "content-creator",
+      "schedule": { "at": ["10:00"], "days": ["mon", "thu"] },
+      "prompt": "Berdasarkan data TikTok terkini, sediakan 5 idea video baru lengkap dengan hook, skrip ringkas, caption dan hashtag. Cadangkan slot penggambaran/posting dalam kalendar."
+    },
+    {
+      "id": "weekly-report", "name": "Laporan engagement mingguan", "workspace": "marketing-report", "role": "marketing-manager",
+      "schedule": { "at": ["08:30"], "days": ["mon"] },
+      "prompt": "Sediakan laporan prestasi TikTok minggu lepas dengan trend, video terbaik dan 3 cadangan tindakan. Cadangkan muat naik ke Drive."
+    },
+    {
+      "id": "bookings", "name": "Semak tempahan baru", "workspace": "bookings", "role": "account-manager",
+      "schedule": { "every": "30m", "between": "09:00-21:00" },
+      "prompt": "Semak tempahan baru dari katalog. Untuk setiap tempahan baru: semak kalendar, cadangkan event dan draf balasan kepada pelanggan."
+    },
+    {
+      "id": "calendar-brief", "name": "Ringkasan kalendar harian", "workspace": "calendar-planner", "role": "project-manager",
+      "schedule": { "at": ["08:00"] },
+      "prompt": "Sediakan ringkasan jadual 7 hari akan datang: penggambaran, mesyuarat, pertembungan masa dan persediaan yang perlu dibuat."
+    }
+  ]
+}

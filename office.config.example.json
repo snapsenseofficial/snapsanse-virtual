@@ -1,0 +1,10 @@
+{
+  "_comment": "Copy to office.config.json. Map a project folder name to a job role id.",
+  "_roles": "creative-director, marketing-manager, project-manager, account-manager, graphic-designer, photographer, videographer, video-editor, content-creator, social-media, copywriter, web-developer",
+  "roles": {
+    "snapsense-web": "web-developer",
+    "reels-2026": "video-editor",
+    "wedding-gallery": "photographer",
+    "brand-assets": "graphic-designer"
+  }
+}
