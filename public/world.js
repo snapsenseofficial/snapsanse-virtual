@@ -2,7 +2,7 @@
 (function (PO) {
   'use strict';
 
-  const T = 16, COLS = 26, ROWS = 16, W = COLS * T, H = ROWS * T;
+  const T = 16, COLS = 48, ROWS = 30, W = COLS * T, H = ROWS * T;
   const SPEED = 44; // px / second (logical)
   const WORK = new Set(['typing', 'reading', 'running', 'browsing', 'thinking', 'planning', 'delegating', 'waiting']);
   // Speech-bubble text per status (typing uses the job role's own verb).
@@ -43,6 +43,7 @@
     if (looks.has(agent.id)) return looks.get(agent.id);
     let role, mascot;
     if (agent.npc) { role = FIRE_ROLE; mascot = PO.mascots.FIRE; }
+    else if (agent.boss) { role = PO.roles.HOM; mascot = PO.mascots.BOSS; }
     else if (agent.parentId) {
       role = PO.roles.ASSISTANT;
       const lead = looks.get(agent.parentId);
@@ -63,57 +64,126 @@
   }
 
   // ---- map -------------------------------------------------------------------
+  // Floor plan: four department rooms (two up, two down) off a corridor, the
+  // lounge & photo studio top-right, and the Head of Marketing suite
+  // (PA reception + private office) bottom-right.
   const blocked = [];
   for (let y = 0; y < ROWS; y++) {
     blocked.push([]);
     for (let x = 0; x < COLS; x++) blocked[y].push(y < 2 || y === ROWS - 1 || x === 0 || x === COLS - 1);
   }
-  const DOOR = { tx: 0, ty: 13 };
+  const DOOR = { tx: 0, ty: 15 };
   blocked[DOOR.ty][DOOR.tx] = false;
   const block = (x, y, w = 1, h = 1) => { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) blocked[y + j][x + i] = true; };
 
-  const desks = [];
-  for (const dy of [3, 7, 11]) {
-    for (const dx of [2, 6, 10, 14]) {
-      block(dx, dy, 2, 1);
-      desks.push({
-        tx: dx, ty: dy, owner: null, role: PO.roles.ROLES[desks.length],
-        seat: { tx: dx + 1, ty: dy - 1 }, x: dx * T + 24, y: dy * T + 8,
-      });
+  const ROOMS = [
+    { id: 'authenticity', dept: 'authenticity', x0: 1, y0: 2, x1: 14, y1: 13, doorSide: 'bottom' },
+    { id: 'awareness', dept: 'awareness', x0: 16, y0: 2, x1: 29, y1: 13, doorSide: 'bottom' },
+    { id: 'sales', dept: 'sales', x0: 1, y0: 18, x1: 14, y1: 28, doorSide: 'top' },
+    { id: 'trust', dept: 'trust', x0: 16, y0: 18, x1: 29, y1: 28, doorSide: 'top' },
+    { id: 'lounge', x0: 31, y0: 2, x1: 46, y1: 14 },
+    { id: 'reception', dept: 'hom', x0: 31, y0: 18, x1: 36, y1: 28 },
+    { id: 'hom', dept: 'hom', x0: 38, y0: 18, x1: 46, y1: 28 },
+  ];
+  // Partition walls (tile lines); gaps listed in `doors` stay open.
+  const WALLS = [
+    { x0: 1, y0: 14, x1: 29, y1: 14, doors: [7, 8, 22, 23] },
+    { x0: 15, y0: 2, x1: 15, y1: 13 },
+    { x0: 30, y0: 2, x1: 30, y1: 14 },
+    { x0: 1, y0: 17, x1: 46, y1: 17, doors: [7, 8, 22, 23, 34, 35] },
+    { x0: 15, y0: 18, x1: 15, y1: 28 },
+    { x0: 30, y0: 18, x1: 30, y1: 28 },
+    { x0: 37, y0: 18, x1: 37, y1: 28, doors: [23, 24] },
+  ];
+  for (const w of WALLS) {
+    for (let y = w.y0; y <= w.y1; y++) for (let x = w.x0; x <= w.x1; x++) {
+      const gap = w.doors && w.doors.includes(w.y0 === w.y1 ? x : y);
+      if (!gap) blocked[y][x] = true;
     }
   }
-  const plants = [[17, 3], [17, 7], [17, 11], [24, 14], [18, 14], [1, 2]];
-  plants.forEach(([x, y]) => block(x, y));
-  block(18, 2, 2, 1); // bookshelf
-  block(21, 2, 3, 1); // coffee counter
-  block(24, 2);       // water cooler
-  block(24, 5);       // arcade
-  block(19, 9, 4, 1); // sofa
-  block(20, 11, 2, 1); // coffee table
-  block(19, 5, 4, 1);  // photo studio backdrop
-  block(18, 6); block(23, 6); // softboxes
-  block(20, 7);        // camera on tripod
-  const BEANBAGS = [[19, 12, '#f5b83d'], [22, 12, '#9b6ad8']];
-  block(1, 9);          // "WORK HARD STAY COOL" chalk sign
-  block(11, 14, 2, 1);  // "Same team, different vibes" board
-  BEANBAGS.forEach(([x, y]) => block(x, y));
 
-  const tileFeet = (tx, ty) => ({ x: tx * T + 8, y: ty * T + 12 });
-  const spot = (name, tx, ty, pose, dir, fx, fy) => {
-    const f = tileFeet(tx, ty);
-    return { name, tile: { tx, ty }, x: fx != null ? fx : f.x, y: fy != null ? fy : f.y, pose, dir };
+  // Desks: six per department (manager, creator, designer / editor, copywriter,
+  // planner), the PA at reception and the Head of Marketing's desk.
+  const desks = [];
+  const addDesk = (role, dx, dy) => {
+    block(dx, dy, 2, 1);
+    desks.push({ tx: dx, ty: dy, owner: null, role, seat: { tx: dx + 1, ty: dy - 1 }, x: dx * T + 24, y: dy * T + 8 });
   };
-  const SPOTS = [
-    ...[19, 20, 21, 22].map((x) => spot(`sofa${x}`, x, 9, 'sitFront', 'down', null, 9 * T + 13)),
-    ...[21, 22, 23].map((x) => spot(`coffee${x}`, x, 3, 'stand', 'up')),
-    spot('cooler', 24, 3, 'stand', 'up'),
-    spot('arcade', 23, 5, 'stand', 'right'),
-    spot('books18', 18, 3, 'stand', 'up'), spot('books19', 19, 3, 'stand', 'up'),
-    spot('win4', 4, 2, 'stand', 'up'), spot('win13', 13, 2, 'stand', 'up'),
-    ...BEANBAGS.map(([x, y]) => spot(`bean${x}`, x, y, 'sitFront', 'down', null, y * T + 13)),
-    spot('studio20', 20, 6, 'stand', 'down'), spot('studio21', 21, 6, 'stand', 'down'),
-    spot('shoot', 21, 8, 'stand', 'up'),
-  ];
+  const TABLES = [], BOARDS = [];
+  const SPOTS = [];
+  const tileFeet = (tx, ty) => ({ x: tx * T + 8, y: ty * T + 12 });
+  const spot = (name, tx, ty, pose, dir, fx, fy, dept) => {
+    const f = tileFeet(tx, ty);
+    return { name, tile: { tx, ty }, x: fx != null ? fx : f.x, y: fy != null ? fy : f.y, pose, dir, dept };
+  };
+  const plants = [];
+  for (const r of ROOMS.filter((k) => PO.roles.dept(k.dept))) {
+    const types = PO.roles.TYPES.map((ty) => PO.roles.get(`${r.dept}-${ty.id}`));
+    const top = r.doorSide === 'bottom';
+    const rows = [r.y0 + 2, r.y0 + 6], cols = [r.x0 + 1, r.x0 + 5, r.x0 + 9];
+    rows.forEach((dy, j) => cols.forEach((dx, i) => addDesk(types[j * 3 + i], dx, dy)));
+    // team table with stools and the department board
+    const fy = top ? r.y0 + 9 : r.y0 + 8;
+    const tx = r.x0 + 3;
+    block(tx, fy, 2, 1);
+    TABLES.push({ tx, ty: fy, w: 2, h: 1, dept: r.dept });
+    SPOTS.push(spot(`meet-${r.dept}-1`, tx - 1, fy, 'stand', 'right', null, null, r.dept));
+    SPOTS.push(spot(`meet-${r.dept}-2`, tx + 2, fy, 'stand', 'left', null, null, r.dept));
+    SPOTS.push(spot(`meet-${r.dept}-3`, tx, fy + 1, 'stand', 'up', null, null, r.dept));
+    SPOTS.push(spot(`meet-${r.dept}-4`, tx + 1, fy + 1, 'stand', 'up', null, null, r.dept));
+    const bx = r.x0 + 9;
+    block(bx, fy, 2, 1);
+    BOARDS.push({ tx: bx, ty: fy, dept: r.dept });
+    SPOTS.push(spot(`board-${r.dept}-1`, bx, fy + 1, 'stand', 'up', null, null, r.dept));
+    SPOTS.push(spot(`board-${r.dept}-2`, bx + 1, fy + 1, 'stand', 'up', null, null, r.dept));
+    plants.push([r.x1, fy]);
+    plants.push(top ? [r.x1, r.y0] : [r.x0, r.y1]);
+  }
+  addDesk(PO.roles.PA, 32, 20);
+  addDesk(PO.roles.HOM, 41, 20);
+  // Head of Marketing: round meeting table, bookshelf, guest chairs at reception
+  TABLES.push({ tx: 41, ty: 25, w: 2, h: 1, dept: 'hom', round: true });
+  block(41, 25, 2, 1);
+  SPOTS.push(spot('hom-1', 40, 25, 'stand', 'right', null, null, 'hom'), spot('hom-2', 43, 25, 'stand', 'left', null, null, 'hom'),
+    spot('hom-3', 41, 26, 'stand', 'up', null, null, 'hom'), spot('hom-4', 42, 26, 'stand', 'up', null, null, 'hom'));
+  block(44, 18, 2, 1); // boss bookshelf
+  SPOTS.push(spot('recep-1', 35, 22, 'stand', 'left', null, null, 'hom'), spot('recep-2', 35, 25, 'stand', 'left', null, null, 'hom'));
+  plants.push([38, 18], [46, 28], [38, 28], [31, 28], [36, 18]);
+
+  // Lounge & photo studio: the original office's lounge, shifted LX tiles right.
+  const LX = 14;
+  const lounge = (x, y) => [x + LX, y];
+  [[17, 3], [17, 11], [24, 14], [18, 14]].forEach(([x, y]) => plants.push(lounge(x, y)));
+  plants.push([46, 2], [46, 14]);
+  block(18 + LX, 2, 2, 1); // bookshelf
+  block(21 + LX, 2, 3, 1); // coffee counter
+  block(24 + LX, 2);       // water cooler
+  block(24 + LX, 5);       // arcade
+  block(19 + LX, 9, 4, 1); // sofa
+  block(20 + LX, 11, 2, 1); // coffee table
+  block(19 + LX, 5, 4, 1);  // photo studio backdrop
+  block(18 + LX, 6); block(23 + LX, 6); // softboxes
+  block(20 + LX, 7);        // camera on tripod
+  const BEANBAGS = [[19 + LX, 12, '#f5b83d'], [22 + LX, 12, '#9b6ad8'], [41, 6, '#3fae6a'], [44, 6, '#e5484d'], [41, 9, '#3e8ef7'], [44, 9, '#f06a9b']];
+  const SIGN = { tx: 45, ty: 11 };       // "WORK HARD STAY COOL" chalk sign
+  const TEAMBOARD = { tx: 41, ty: 13 }; // "Same team, different vibes" board
+  block(SIGN.tx, SIGN.ty);
+  block(TEAMBOARD.tx, TEAMBOARD.ty, 2, 1);
+  BEANBAGS.forEach(([x, y]) => block(x, y));
+  plants.forEach(([x, y]) => block(x, y));
+
+  SPOTS.push(
+    ...[19, 20, 21, 22].map((x) => spot(`sofa${x}`, x + LX, 9, 'sitFront', 'down', null, 9 * T + 13)),
+    ...[21, 22, 23].map((x) => spot(`coffee${x}`, x + LX, 3, 'stand', 'up')),
+    spot('cooler', 24 + LX, 3, 'stand', 'up'),
+    spot('arcade', 23 + LX, 5, 'stand', 'right'),
+    spot('books18', 18 + LX, 3, 'stand', 'up'), spot('books19', 19 + LX, 3, 'stand', 'up'),
+    spot('win41', 41, 2, 'stand', 'up'), spot('win45', 45, 2, 'stand', 'up'),
+    ...BEANBAGS.map(([x, y]) => spot(`bean${x}-${y}`, x, y, 'sitFront', 'down', null, y * T + 13)),
+    spot('studio20', 20 + LX, 6, 'stand', 'down'), spot('studio21', 21 + LX, 6, 'stand', 'down'),
+    spot('shoot', 21 + LX, 8, 'stand', 'up'),
+    spot('team41', 41, 14, 'stand', 'up'), spot('team42', 42, 14, 'stand', 'up'),
+  );
 
   function findPath(from, to) {
     const key = (x, y) => y * COLS + x;
@@ -156,6 +226,10 @@
       g.font = hand(size); g.fillStyle = color; g.textAlign = align; g.textBaseline = 'middle';
       g.fillText(s, x * S, y * S);
     };
+    const label = (s, x, y, size, color, weight = 900) => {
+      g.font = `${weight} ${Math.round(size * S)}px "Nunito", system-ui, sans-serif`; g.fillStyle = color; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(s, x * S, y * S);
+    };
     g.save();
     // chalkboard
     txt('Better Ideas', 32, 10.5, 7, '#f1f1ec');
@@ -164,15 +238,42 @@
     txt('To Do:', 116, 7, 5.5, '#2a2d35', 'left');
     TODO.forEach((label, i) => txt(label, 7 * T + 8.5 + Math.floor(i / 3) * 24, 11.5 + (i % 3) * 5, 4.6, '#2a2d35', 'left'));
     // coffee bar chalk menu
-    txt('Good Food', 21 * T + 24, 8.5, 5, '#f1f1ec');
-    txt('Good Mood ☺', 21 * T + 24, 14, 5, '#f5b83d');
+    txt('Good Food', (21 + LX) * T + 24, 8.5, 5, '#f1f1ec');
+    txt('Good Mood ☺', (21 + LX) * T + 24, 14, 5, '#f5b83d');
     if (region === 'all') {
       // floor signs
-      ['WORK', 'HARD', 'STAY', 'COOL'].forEach((w, i) => txt(w, 24, 141 + i * 4.6, 4.4, '#f1f1ec'));
-      txt('Same team', 192, 220, 5.2, '#f1f1ec');
-      txt('Different vibes ♡', 192, 226.5, 5.2, '#f5b83d');
+      ['WORK', 'HARD', 'STAY', 'COOL'].forEach((w, i) => txt(w, SIGN.tx * T + 8, SIGN.ty * T - 3 + i * 4.6, 4.4, '#f1f1ec'));
+      txt('Same team', TEAMBOARD.tx * T + 16, TEAMBOARD.ty * T - 4, 5.2, '#f1f1ec');
+      txt('Different vibes ♡', TEAMBOARD.tx * T + 16, TEAMBOARD.ty * T + 2.5, 5.2, '#f5b83d');
+      // department names painted on the floor, signs on the department boards
+      for (const r of ROOMS) {
+        const d = PO.roles.dept(r.dept);
+        if (!d) continue;
+        const cx = (r.x0 + r.x1 + 1) / 2 * T;
+        const fy = (r.doorSide === 'bottom' ? r.y1 : r.y0) * T + 8;
+        label(d.name, cx, r.doorSide === 'bottom' ? fy + 1 : fy - 1, 7.5, d.color);
+        label(d.ms.toUpperCase(), cx, r.doorSide === 'bottom' ? fy - 6 : fy + 6, 3.4, 'rgba(255,255,255,0.55)', 800);
+      }
+      for (const b of BOARDS) {
+        const d = PO.roles.dept(b.dept);
+        label(d.name, b.tx * T + 16, b.ty * T - 4.5, 2.9, '#1d1d24');
+        g.font = `700 ${Math.round(2.3 * S)}px "Nunito", system-ui, sans-serif`; g.fillStyle = '#4a4f5c';
+        g.fillText(d.focus, (b.tx * T + 16) * S, (b.ty * T - 0.5) * S);
+      }
+      label('HEAD OF MARKETING', 42 * T, 17 * T + 9, 4.6, '#f5b83d');
+      label('PA · RECEPTION', 33.5 * T, 17 * T + 9, 3.4, '#d7c6f5');
     }
     g.restore();
+  }
+
+  // Top-wall decor (shared by the 2D and 3D views).
+  function drawWallDecor(g, t, now) {
+    const SC = PO.scene;
+    [4, 12, 25, 40, 44].forEach((x) => SC.drawWindow(g, x * T, t, now));
+    SC.drawWhiteboard(g, 7 * T, sims, tasksDone, WORK);
+    SC.drawNeon(g, 22 * T + 4, t);
+    SC.drawClock(g, 104, 14, now);
+    return SC.drawBrandSign(g, 17 * T + 2, t, logoReady ? logoImg : null);
   }
 
   // ---- furniture drawables ------------------------------------------------------
@@ -354,7 +455,7 @@
     emote(victim.id, 'fire');
     onEvent({ kind: 'fire', agentId: victim.id, text: `Computer overheated! ${FIRE_AT}+ tool calls in ${LOAD_WINDOW}s 🔥` });
     // nearest agent on a break grabs the extinguisher, otherwise call the fire marshal
-    const idle = [...sims.values()].filter((o) => o !== victim && !o.leaving && !o.task && !o.data.npc &&
+    const idle = [...sims.values()].filter((o) => o !== victim && !o.leaving && !o.task && !o.data.npc && !o.data.boss &&
       !WORK.has(o.data.status) && o.data.status !== 'done')
       .sort((a, b) => Math.hypot(a.x - d.x, a.y - d.y) - Math.hypot(b.x - d.x, b.y - d.y));
     let helper = idle[0];
@@ -630,17 +731,18 @@
       freeDesk(s);
       return { key: 'door', tile: DOOR, x: -12, y: DOOR.ty * T + 12, pose: 'stand', dir: 'left' };
     }
-    if (WORK.has(s.data.status)) {
+    const anchored = s.look.role === PO.roles.HOM || s.look.role === PO.roles.PA;
+    if (WORK.has(s.data.status) || anchored) {
       if (!s.desk) {
         // children prefer a desk close to their parent
         const parent = s.data.parentId && sims.get(s.data.parentId);
         const pd = parent && parent.desk;
         const own = desks.find((d) => !d.owner && d.role === s.look.role);
-        const free = desks.filter((d) => !d.owner)
+        const free = desks.filter((d) => !d.owner && d.role.dept !== 'hom')
           .sort((a, b) => pd ? (Math.abs(a.tx - pd.tx) + Math.abs(a.ty - pd.ty) * 2) - (Math.abs(b.tx - pd.tx) + Math.abs(b.ty - pd.ty) * 2) : 0);
         let d = own || free[0];
         if (!d) { // borrow a desk from someone on a break
-          d = desks.find((k) => { const o = sims.get(k.owner); return o && !WORK.has(o.data.status); });
+          d = desks.find((k) => { const o = sims.get(k.owner); return o && k.role.dept !== 'hom' && !WORK.has(o.data.status); });
           if (d) sims.get(d.owner).desk = null;
         }
         if (d) { d.owner = s.id; s.desk = d; }
@@ -656,14 +758,20 @@
     if (!s.spot || now > s.nextWander) {
       const taken = new Set([...sims.values()].filter((o) => o !== s && o.spot).map((o) => o.spot.name));
       const options = SPOTS.filter((p) => !taken.has(p.name) && (!s.spot || p.name !== s.spot.name));
+      // a break is spent with the department (team table, board), in the lounge,
+      // or, for managers now and then, in a meeting with the Head of Marketing
+      const role = s.look.role, r = Math.random();
+      const team = options.filter((p) => p.dept && p.dept === role.dept);
+      const boss = role.type === 'manager' ? options.filter((p) => p.dept === 'hom' && /^hom-/.test(p.name)) : [];
+      const shared = options.filter((p) => !p.dept);
       // personality: most of the time they go where they like to hang out
       const likes = (s.look.mascot.likes || []);
-      const fav = options.filter((p) => likes.some((l) => p.name.startsWith(l)));
-      const pool = fav.length && Math.random() < 0.75 ? fav : options;
+      const fav = shared.filter((p) => likes.some((l) => p.name.startsWith(l)));
+      const pool = boss.length && r < 0.12 ? boss : team.length && r < 0.6 ? team : fav.length && Math.random() < 0.75 ? fav : shared;
       if (pool.length) s.spot = pool[Math.floor(Math.random() * pool.length)];
       s.nextWander = now + 25 + Math.random() * 35;
     }
-    if (!s.spot) return { key: 'stand', tile: { tx: 8, ty: 6 }, x: 8 * T + 8, y: 6 * T + 12, pose: 'stand', dir: 'down' };
+    if (!s.spot) { const cx = 3 + (Math.floor(s.blinkAt * 997) % 26); return { key: `stand${cx}`, tile: { tx: cx, ty: 16 }, x: cx * T + 8, y: 16 * T + 12, pose: 'stand', dir: 'down' }; }
     return { key: `spot:${s.spot.name}`, tile: s.spot.tile, x: s.spot.x, y: s.spot.y, pose: s.spot.pose, dir: s.spot.dir };
   }
 
@@ -713,7 +821,7 @@
     bg.width = W * BG_RES; bg.height = H * BG_RES;
     const c = bg.getContext('2d');
     c.scale(BG_RES, BG_RES);
-    PO.scene.paintBackground(c, W, H, desks, DOOR);
+    PO.scene.paintBackground(c, W, H, desks, DOOR, { ROOMS, WALLS, LX });
     return bg;
   }
   function fireOffset(d) { return PO.scene.fireOffset(d); }
@@ -741,34 +849,33 @@
     const SC = PO.scene;
     const now = new Date();
     g.drawImage(background(), 0, 0, W, H);
-    SC.drawWindow(g, 4 * T, t, now);
-    SC.drawWindow(g, 12 * T, t, now);
-    SC.drawWhiteboard(g, 7 * T, sims, tasksDone, WORK);
-    SC.drawNeon(g, 20 * T + 4, t);
-    SC.drawClock(g, 104, 14, now);
-    const flash = SC.drawBrandSign(g, 14 * T + 2, t, logoReady ? logoImg : null);
+    const flash = drawWallDecor(g, t, now);
 
     const at = (name) => [...sims.values()].some((s) => s.atTarget && s.spot && s.spot.name.startsWith(name) && !WORK.has(s.data.status));
     const I = PO.world.internals;
     const items = [];
+    const inLounge = (fn) => () => { g.save(); g.translate(LX * T, 0); fn(); g.restore(); };
     for (const d of desks) {
       const owner = d.owner && sims.get(d.owner);
       items.push({ y: d.ty * T + 15, draw: () => SC.drawDesk(g, d, t, owner, I) });
       items.push({ y: d.ty * T + 7, draw: () => SC.drawChair(g, d) });
     }
     plants.forEach(([x, y], i) => items.push({ y: y * T + 15, draw: () => SC.drawPlant(g, x, y, i % 4) }));
-    items.push({ y: 5 * T + 15, draw: () => SC.drawBackdrop(g) });
-    [18, 23].forEach((x) => items.push({ y: 6 * T + 15, draw: () => SC.drawSoftbox(g, x, at('studio')) }));
-    items.push({ y: 7 * T + 15, draw: () => SC.drawTripod(g, t, at('studio')) });
+    for (const tb of TABLES) items.push({ y: tb.ty * T + 14, draw: () => SC.drawMeetTable(g, tb) });
+    for (const b of BOARDS) items.push({ y: b.ty * T + 15, draw: () => SC.drawDeptBoard(g, b, PO.roles.dept(b.dept)) });
+    items.push({ y: 18 * T + 15, draw: () => SC.drawBossShelf(g, 44, 18) });
+    items.push({ y: 5 * T + 15, draw: inLounge(() => SC.drawBackdrop(g)) });
+    [18, 23].forEach((x) => items.push({ y: 6 * T + 15, draw: inLounge(() => SC.drawSoftbox(g, x, at('studio'))) }));
+    items.push({ y: 7 * T + 15, draw: inLounge(() => SC.drawTripod(g, t, at('studio'))) });
     BEANBAGS.forEach(([x, y, c]) => items.push({ y: y * T + 6, draw: () => SC.drawBeanbag(g, x, y, c) }));
-    items.push({ y: 2 * T + 15, draw: () => SC.drawBookshelf(g) });
-    items.push({ y: 2 * T + 15, draw: () => SC.drawCoffeeBar(g, t, at('coffee')) });
-    items.push({ y: 2 * T + 15, draw: () => SC.drawCooler(g) });
-    items.push({ y: 5 * T + 15, draw: () => SC.drawArcade(g, t, at('arcade')) });
-    items.push({ y: 9 * T + 6, draw: () => SC.drawSofa(g) });
-    items.push({ y: 11 * T + 14, draw: () => SC.drawTable(g) });
-    items.push({ y: 9 * T + 15, draw: () => SC.drawSigns(g) });
-    items.push({ y: 14 * T + 15, draw: () => SC.drawTeamBoard(g) });
+    items.push({ y: 2 * T + 15, draw: inLounge(() => SC.drawBookshelf(g)) });
+    items.push({ y: 2 * T + 15, draw: inLounge(() => SC.drawCoffeeBar(g, t, at('coffee'))) });
+    items.push({ y: 2 * T + 15, draw: inLounge(() => SC.drawCooler(g)) });
+    items.push({ y: 5 * T + 15, draw: inLounge(() => SC.drawArcade(g, t, at('arcade'))) });
+    items.push({ y: 9 * T + 6, draw: inLounge(() => SC.drawSofa(g)) });
+    items.push({ y: 11 * T + 14, draw: inLounge(() => SC.drawTable(g)) });
+    items.push({ y: SIGN.ty * T + 15, draw: () => { g.save(); g.translate((SIGN.tx - 1) * T, (SIGN.ty - 9) * T); SC.drawSigns(g); g.restore(); } });
+    items.push({ y: TEAMBOARD.ty * T + 15, draw: () => { g.save(); g.translate((TEAMBOARD.tx - 11) * T, (TEAMBOARD.ty - 14) * T); SC.drawTeamBoard(g); g.restore(); } });
 
     for (const s of sims.values()) {
       items.push({ y: s.y, draw: () => {
@@ -1061,12 +1168,12 @@
     set2D(on) { active2D = on; },
     // shared with the 3D view (world3d.js)
     internals: {
-      T, COLS, ROWS, W, H, WORK, desks, sims, plants, BEANBAGS, DOOR, logoImg, BG_RES,
+      T, COLS, ROWS, W, H, WORK, desks, sims, plants, BEANBAGS, DOOR, logoImg, BG_RES, ROOMS, WALLS, TABLES, BOARDS, LX, SIGN, TEAMBOARD,
       get bg() { return background(); },
       get tasksDone() { return tasksDone; },
       get logoReady() { return logoReady; },
       get hoverId() { return hoverId; },
-      drawScreen, deskStatus, drawWallText, isChat,
+      drawScreen, deskStatus, drawWallText, drawWallDecor, isChat,
       moodFor, armsFor, bubbleFor,
     },
     look: (id) => (sims.get(id) ? sims.get(id).look : lookFor(id)),

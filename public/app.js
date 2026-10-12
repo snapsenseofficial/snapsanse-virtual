@@ -26,6 +26,15 @@
     queueRender();
   });
 
+  // The owner, at the Head of Marketing desk. "waiting" means approvals need them.
+  function bossAgent(pending = 0) {
+    return {
+      id: 'boss', boss: true, project: 'SnapSense', jobRole: 'hom', status: pending ? 'waiting' : 'idle',
+      detail: pending ? `${pending} kelulusan menunggu anda` : 'Head of Marketing', toolCount: 0,
+      startedAt: Date.now(), lastActive: Date.now(),
+    };
+  }
+
   // ---- events -------------------------------------------------------------------
   function handle(msg) {
     switch (msg.type) {
@@ -33,6 +42,7 @@
         agents.clear(); log.length = 0; PO.world.reset();
         if (msg.logo) PO.world.setLogo(msg.logo);
         msg.agents.forEach((a) => { agents.set(a.id, a); PO.world.upsert(a, { instant: true }); });
+        { const b = bossAgent(); agents.set(b.id, b); PO.world.upsert(b, { instant: true }); }
         log.push(...msg.log);
         break;
       case 'agent': {
@@ -61,6 +71,7 @@
     $('conn').textContent = '● demo mode';
     $('conn').className = 'conn demo';
     PO.demo.start(handle);
+    { const b = bossAgent(); agents.set(b.id, b); PO.world.upsert(b, { instant: true }); }
     // demo recordings should still show your own logo when the server has one
     if (window.PO_LOGO) PO.world.setLogo(window.PO_LOGO);
     else if (location.protocol === 'file:') PO.world.setLogo('logo.png');
@@ -292,6 +303,7 @@
 
     db.collection('approvals').orderBy('createdAt', 'desc').limit(40).onSnapshot((snap) => {
       cloud.approvals = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      handle({ type: 'agent', agent: bossAgent(cloud.approvals.filter((a) => a.status === 'pending').length) });
       renderCloud();
     }, fail('approvals'));
 

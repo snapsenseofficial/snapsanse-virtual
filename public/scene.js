@@ -18,22 +18,44 @@
   function vgrad(g, y0, y1, a, b) { const gr = g.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, a); gr.addColorStop(1, b); return gr; }
 
   // ---- static background (cached by the world) ------------------------------------------
-  function paintBackground(g, W, H, desks, DOOR) {
-    // floor: large dark tiles with soft variation
+  function paintBackground(g, W, H, desks, DOOR, L) {
+    const COLS = W / T, ROWS = H / T;
+    // corridor & base floor: large dark tiles with soft variation
     g.fillStyle = '#44474f'; g.fillRect(0, 32, W, H - 32);
-    for (let ty = 2; ty < 15; ty++) for (let tx = 1; tx < 25; tx++) {
+    for (let ty = 2; ty < ROWS - 1; ty++) for (let tx = 1; tx < COLS - 1; tx++) {
       const v = ((tx * 7 + ty * 13) % 5) * 0.012;
       g.fillStyle = shade((tx + ty) % 2 ? '#474a52' : '#4b4e57', v);
       g.fillRect(tx * T + 0.25, ty * T + 0.25, T - 0.5, T - 0.5);
     }
-    // light pooling from the windows
-    const pool = g.createRadialGradient(130, 40, 4, 130, 40, 150);
-    pool.addColorStop(0, 'rgba(255,240,210,0.10)'); pool.addColorStop(1, 'rgba(255,240,210,0)');
-    g.fillStyle = pool; g.fillRect(0, 32, W, H);
+    // department carpets, the boss's warm wood floor and the reception
+    for (const r of L.ROOMS) {
+      const d = PO.roles.dept(r.dept);
+      const x = r.x0 * T, y = r.y0 * T, w = (r.x1 - r.x0 + 1) * T, h = (r.y1 - r.y0 + 1) * T;
+      if (d) {
+        g.fillStyle = d.floor; g.fillRect(x, y, w, h);
+        g.fillStyle = 'rgba(255,255,255,0.025)';
+        for (let yy = y + 2; yy < y + h; yy += 4) g.fillRect(x, yy, w, 0.6);
+        // a stripe of the department colour along the entrance side
+        g.fillStyle = d.color; g.globalAlpha = 0.55;
+        g.fillRect(x, r.doorSide === 'bottom' ? y + h - 2 : y, w, 2);
+        g.globalAlpha = 1;
+        // floor label plate (text is drawn crisp by the world)
+        const cx = x + w / 2, fy = r.doorSide === 'bottom' ? y + h - 8 : y + 8;
+        rr(g, cx - 34, fy - 9, 68, 18, 3, 'rgba(10,12,18,0.35)');
+      } else if (r.id === 'hom') {
+        for (let i = 0; i < h; i += 4) { g.fillStyle = i % 8 ? '#6b4a32' : '#704e35'; g.fillRect(x, y + i, w, 4); g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(x, y + i + 3.6, w, 0.4); }
+        rr(g, x + 2 * T + 8, y + 5 * T + 4, 5 * T, 4 * T, 4, '#7a2e3a', '#5a1f2a', 0.8); // rug under the meeting table
+        rr(g, x + 2 * T + 12, y + 5 * T + 8, 5 * T - 8, 4 * T - 8, 3, null, 'rgba(245,184,61,0.35)', 0.6);
+      } else if (r.id === 'reception') {
+        g.fillStyle = '#4d4a58'; g.fillRect(x, y, w, h);
+        for (let ty = r.y0; ty <= r.y1; ty++) for (let tx = r.x0; tx <= r.x1; tx++) { g.fillStyle = (tx + ty) % 2 ? '#524e5e' : '#4a4756'; g.fillRect(tx * T + 0.3, ty * T + 0.3, T - 0.6, T - 0.6); }
+      }
+    }
     // lounge rug with the SnapSense camera emblem
-    rr(g, 18 * T + 3, 8 * T + 2, 6 * T - 6, 6 * T - 5, 4, '#232c42', '#1a2133', 0.8);
-    rr(g, 18 * T + 6, 8 * T + 5, 6 * T - 12, 6 * T - 11, 3, null, 'rgba(255,255,255,0.08)', 0.6);
-    const ex = 21 * T + 5, ey = 13 * T - 2;
+    const LX = L.LX * T;
+    rr(g, LX + 18 * T + 3, 8 * T + 2, 6 * T - 6, 6 * T - 5, 4, '#232c42', '#1a2133', 0.8);
+    rr(g, LX + 18 * T + 6, 8 * T + 5, 6 * T - 12, 6 * T - 11, 3, null, 'rgba(255,255,255,0.08)', 0.6);
+    const ex = LX + 21 * T + 5, ey = 13 * T - 2;
     rr(g, ex - 7, ey - 4.5, 14, 9, 2, '#f5b83d'); rr(g, ex - 4, ey - 6.2, 4.5, 2, 0.8, '#f5b83d');
     ell(g, ex, ey, 3, 3, '#232c42'); ell(g, ex, ey, 1.8, 1.8, '#f5b83d'); ell(g, ex + 4.6, ey - 2.4, 0.8, 0.8, '#232c42');
     // charcoal back wall
@@ -52,7 +74,42 @@
     // side + bottom walls
     g.fillStyle = '#2a2c32'; g.fillRect(0, 32, T, H - 32); g.fillRect(W - T, 32, T, H - 32); g.fillRect(0, H - T, W, T);
     g.fillStyle = '#1f2126'; g.fillRect(T - 3, 32, 3, H - 48); g.fillRect(W - T, 32, 3, H - 48); g.fillRect(0, H - T, W, 3);
-    // door
+    // partition walls: glass on a dark frame, with door gaps
+    for (const w of L.WALLS) {
+      const horiz = w.y0 === w.y1;
+      const n = horiz ? w.x1 - w.x0 + 1 : w.y1 - w.y0 + 1;
+      for (let i = 0; i < n; i++) {
+        const tx = horiz ? w.x0 + i : w.x0, ty = horiz ? w.y0 : w.y0 + i;
+        const isDoor = w.doors && w.doors.includes(horiz ? tx : ty);
+        const X = tx * T, Y = ty * T;
+        if (isDoor) { // threshold strip
+          g.fillStyle = '#5b5e68'; horiz ? g.fillRect(X, Y + 6, T, 4) : g.fillRect(X + 6, Y, 4, T);
+          continue;
+        }
+        if (horiz) {
+          g.fillStyle = '#2b2e36'; g.fillRect(X, Y + 9, T, 7);           // low wall
+          g.fillStyle = 'rgba(170,205,235,0.22)'; g.fillRect(X, Y + 1, T, 8); // glass
+          g.fillStyle = '#1d1f25'; g.fillRect(X, Y, T, 1.2); g.fillRect(X, Y + 8.6, T, 0.8);
+          g.fillStyle = 'rgba(255,255,255,0.18)'; g.fillRect(X + 3, Y + 2, 0.6, 5);
+          if (tx % 3 === 0) { g.fillStyle = '#1d1f25'; g.fillRect(X, Y, 1, 9); }
+        } else {
+          g.fillStyle = '#2b2e36'; g.fillRect(X + 5, Y, 6, T);
+          g.fillStyle = 'rgba(170,205,235,0.18)'; g.fillRect(X + 6, Y, 4, T);
+          g.fillStyle = '#1d1f25'; g.fillRect(X + 5, Y, 0.8, T); g.fillRect(X + 10.2, Y, 0.8, T);
+        }
+      }
+      // door posts
+      if (w.doors) for (const d of w.doors) {
+        const X = horiz ? d * T : w.x0 * T, Y = horiz ? w.y0 * T : d * T;
+        g.fillStyle = '#1d1f25';
+        if (horiz) { if (!w.doors.includes(d - 1)) g.fillRect(X - 1, Y, 2, T); if (!w.doors.includes(d + 1)) g.fillRect(X + T - 1, Y, 2, T); }
+        else { if (!w.doors.includes(d - 1)) g.fillRect(X + 4, Y - 1, 8, 2); if (!w.doors.includes(d + 1)) g.fillRect(X + 4, Y + T - 1, 8, 2); }
+      }
+    }
+    // plaque over the Head of Marketing suite
+    rr(g, 39 * T, 17 * T + 2, 6 * T, 12, 2, '#1b1d22', '#f5b83d', 0.6);
+    rr(g, 31.5 * T, 17 * T + 3, 4 * T, 10, 2, '#1b1d22', '#b79be6', 0.5);
+    // main door
     g.fillStyle = '#4b4e57'; g.fillRect(0, DOOR.ty * T, T, T);
     rr(g, 1.5, DOOR.ty * T + 1, 11, 14, 1, '#3a3f4b', LINE, 0.5); rr(g, 3, DOOR.ty * T + 2.5, 8, 11, 0.8, '#4a505e');
     ell(g, 9.6, DOOR.ty * T + 8.5, 0.7, 0.7, '#f5b83d');
@@ -414,10 +471,48 @@
     }
   }
 
+  // Department team table (or the boss's round meeting table).
+  function drawMeetTable(g, tb) {
+    const X = tb.tx * T, Y = tb.ty * T;
+    const accent = (PO.roles.dept(tb.dept) || { color: '#f5b83d' }).color;
+    if (tb.round) {
+      rr(g, X + 14, Y + 9, 4, 6, 0.8, '#2a2d35');
+      ell(g, X + 16, Y + 15, 7, 1.6, 'rgba(0,0,0,0.25)');
+      ell(g, X + 16, Y + 7, 15, 6, '#3b2a20', LINE, 0.6); ell(g, X + 16, Y + 6.4, 13.6, 5, '#5a3d2b');
+      rr(g, X + 6, Y + 4, 6, 4, 0.6, '#f4f4f4', LINE, 0.3); rr(g, X + 19, Y + 4.4, 5, 3.4, 0.5, '#1d1d24'); ell(g, X + 21.5, Y + 6.1, 1, 1, '#3a3f4b');
+      ell(g, X + 15, Y + 6, 1.4, 1, accent);
+      return;
+    }
+    rr(g, X + 3, Y + 9, 1.6, 6, 0.5, '#2a2d35'); rr(g, X + 27.4, Y + 9, 1.6, 6, 0.5, '#2a2d35');
+    rr(g, X + 1, Y + 3, 30, 7.4, 2, '#d9d4c7', LINE, 0.55); g.fillStyle = accent; g.fillRect(X + 2, Y + 9, 28, 1.2);
+    rr(g, X + 5, Y + 4.4, 7, 4.4, 0.6, '#f4f4f4', LINE, 0.3); rr(g, X + 6, Y + 5.2, 5, 2.6, 0.4, accent);
+    rr(g, X + 16, Y + 4.6, 3, 3, 0.6, '#fafafa', LINE, 0.3); ell(g, X + 17.5, Y + 4.8, 1.1, 0.35, '#6b3e1f');
+    rr(g, X + 22, Y + 4.2, 6, 4, 0.4, '#fff6c9', LINE, 0.25); g.fillStyle = '#c8b88a'; g.fillRect(X + 23, Y + 5.4, 4, 0.4); g.fillRect(X + 23, Y + 6.6, 3, 0.4);
+  }
+
+  // Department whiteboard on a stand (title text drawn crisp by the world).
+  function drawDeptBoard(g, b, dept) {
+    const X = b.tx * T, Y = b.ty * T;
+    line(g, [X + 6, Y + 4, X + 4, Y + 15], '#2a2d35', 1); line(g, [X + 26, Y + 4, X + 28, Y + 15], '#2a2d35', 1);
+    rr(g, X + 1, Y - 10, 30, 16, 1, '#8a8f98', LINE, 0.45); rr(g, X + 2, Y - 9, 28, 14, 0.6, '#f6f7f4');
+    g.fillStyle = dept.color; g.fillRect(X + 2, Y - 9, 28, 2.2);
+    const notes = ['#fff3a3', '#ffd1e3', '#c9f2d6', '#cfe3ff'];
+    for (let i = 0; i < 4; i++) rr(g, X + 4 + i * 6.5, Y + 0.6, 5, 3.6, 0.4, notes[(i + b.tx) % 4], LINE, 0.2);
+    rr(g, X + 8, Y + 6, 16, 1, 0.4, '#b9bec7');
+  }
+
+  // The Head of Marketing's bookshelf with a trophy and a camera on top.
+  function drawBossShelf(g, tx, ty) {
+    g.save(); g.translate((tx - 18) * T, (ty - 2) * T); drawBookshelf(g); g.restore();
+    const X = tx * T, Y = ty * T;
+    rr(g, X + 5, Y - 23, 5, 5, 0.6, '#f5b83d', LINE, 0.4); rr(g, X + 6.6, Y - 18, 1.8, 2, 0.3, '#c98a1a');
+    rr(g, X + 19, Y - 22, 8, 4.4, 0.8, '#1d1d24', LINE, 0.3); ell(g, X + 23, Y - 19.8, 1.6, 1.6, '#3a3f4b');
+  }
+
   PO.scene = {
     paintBackground, drawWindow, drawClock, drawWhiteboard, drawNeon, drawBrandSign, skyColor,
     drawDesk, drawChair, drawPlant, drawBookshelf, drawCoffeeBar, drawCooler, drawArcade,
     drawBackdrop, drawSoftbox, drawTripod, drawBeanbag, drawSofa, drawTable, drawSigns, drawTeamBoard,
-    drawFire, fireOffset,
+    drawFire, fireOffset, drawMeetTable, drawDeptBoard, drawBossShelf,
   };
 })(window.PO = window.PO || {});

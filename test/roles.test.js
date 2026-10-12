@@ -10,23 +10,29 @@ const ctx = { window: {} };
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../public/roles.js'), 'utf8'), ctx);
 const roles = ctx.window.PO.roles;
 
-test('every desk has a distinct role', () => {
-  assert.strictEqual(roles.ROLES.length, 12);
-  assert.strictEqual(new Set(roles.ROLES.map((r) => r.id)).size, 12);
+test('four departments with six roles each, plus PA and Head of Marketing', () => {
+  assert.strictEqual(roles.DEPTS.length, 4);
+  assert.strictEqual(roles.ROLES.length, 26);
+  assert.strictEqual(new Set(roles.ROLES.map((r) => r.id)).size, 26);
+  for (const d of roles.DEPTS) {
+    assert.deepStrictEqual([...roles.ROLES.filter((r) => r.dept === d.id).map((r) => r.type)],
+      ['manager', 'creator', 'designer', 'editor', 'copywriter', 'planner']);
+  }
+  assert.ok(roles.get('pa') && roles.get('hom'));
 });
 
-test('project names map to roles by keyword', () => {
+test('project names map to a job and a department by keyword', () => {
   const role = (project) => roles.pick({ project }, new Set()).id;
-  assert.strictEqual(role('reels-editor'), 'video-editor');
-  assert.strictEqual(role('photo-archive'), 'photographer');
-  assert.strictEqual(role('brand-kit'), 'graphic-designer');
-  assert.strictEqual(role('ad-campaign'), 'marketing-manager');
-  assert.strictEqual(role('client-portal'), 'web-developer');
-  assert.strictEqual(role('instagram-social'), 'social-media');
+  assert.strictEqual(role('reels-editor'), 'awareness-editor');
+  assert.strictEqual(role('testimonial-poster'), 'trust-designer');
+  assert.strictEqual(role('promo-caption'), 'sales-copywriter');
+  assert.strictEqual(role('bts-vlog'), 'authenticity-creator');
 });
 
-test('explicit jobRole wins; unmatched agents take a free role', () => {
-  assert.strictEqual(roles.pick({ project: 'reels', jobRole: 'copywriter' }, new Set()).id, 'copywriter');
-  assert.strictEqual(roles.pick({ project: 'zzz' }, new Set(['web-developer'])).id, 'content-creator');
+test('explicit jobRole wins, old role ids still work; unmatched agents take a free role', () => {
+  assert.strictEqual(roles.pick({ project: 'reels', jobRole: 'sales-copywriter' }, new Set()).id, 'sales-copywriter');
+  assert.strictEqual(roles.pick({ project: 'x', jobRole: 'social-media' }, new Set()).id, 'awareness-planner');
+  assert.strictEqual(roles.pick({ project: 'zzz' }, new Set(['authenticity-manager'])).id, 'awareness-manager');
+  assert.strictEqual(roles.pick({ project: 'reels-editor' }, new Set(['awareness-editor'])).id, 'authenticity-editor');
   assert.strictEqual(roles.pick({ project: 'x', parentId: 'p', role: 'Explore' }, new Set()).id, 'assistant');
 });
