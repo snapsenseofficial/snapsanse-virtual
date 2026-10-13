@@ -16,6 +16,16 @@
 const fs = require('fs');
 const path = require('path');
 
+// Behind the cloud agent proxy Node's fetch must be told to use it (and trust its CA).
+if ((process.env.HTTPS_PROXY || process.env.https_proxy) && !process.env.NODE_USE_ENV_PROXY) {
+  const ca = '/root/.ccr/ca-bundle.crt';
+  const r = require('child_process').spawnSync(process.execPath, ['--no-warnings', __filename, ...process.argv.slice(2)], {
+    stdio: 'inherit',
+    env: { ...process.env, NODE_USE_ENV_PROXY: '1', ...(fs.existsSync(ca) && !process.env.NODE_EXTRA_CA_CERTS ? { NODE_EXTRA_CA_CERTS: ca } : {}) },
+  });
+  process.exit(r.status == null ? 1 : r.status);
+}
+
 const argv = process.argv.slice(2);
 const cmd = argv[0];
 const opt = (k, d) => { const i = argv.indexOf(`--${k}`); return i >= 0 && argv[i + 1] && !argv[i + 1].startsWith('--') ? argv[i + 1] : d; };
