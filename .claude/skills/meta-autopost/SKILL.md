@@ -18,7 +18,7 @@ Times are Malaysia time (UTC+8).
   - fields: `date, time, at, dept, type, agent, assetId, url, caption, status (scheduled|posting|posted|failed|skipped), fb, ig, error, postedAt`
   - doc `settings/meta`: connection state shown on the page.
 - **Script**: `node crew/tools/autopost/autopost.js` (`whoami`, `post --type feed|story --image <jpg> [--caption-file f] [--only fb|ig] [--dry-run]`). It prints one JSON line and exits 1 on failure.
-- **Needs**:
+- **Needs** (owner sets once): a **Network secret** on the cloud environment for host `graph.facebook.com` (Bearer, Authorization header) holding a System User token, or env `META_PAGE_TOKEN`. Old note:
   - env `META_PAGE_TOKEN`: a Page access token with `pages_manage_posts, pages_read_engagement, pages_show_list, instagram_basic, instagram_content_publish`
   - network access to `graph.facebook.com` and `*.fbcdn.net`.
 

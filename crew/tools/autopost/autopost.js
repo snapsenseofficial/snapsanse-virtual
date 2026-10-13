@@ -5,7 +5,8 @@
 //   node crew/tools/autopost/autopost.js post --type feed  --image 4-sales-feed.jpg  --caption-file cap.txt [--only fb|ig] [--dry-run]
 //   node crew/tools/autopost/autopost.js post --type story --image 4-sales-story.jpg [--only fb|ig] [--dry-run]
 //
-// Env: META_PAGE_TOKEN (System User or Page access token with pages_manage_posts, pages_read_engagement,
+// Auth: a Network secret on graph.facebook.com (Authorization: Bearer, added by the agent proxy),
+//       or env META_PAGE_TOKEN (System User or Page access token) with pages_manage_posts, pages_read_engagement,
 //      pages_show_list, instagram_basic, instagram_content_publish). Optional META_PAGE_ID, META_IG_ID,
 //      META_GRAPH_VERSION (default v21.0). The token is never printed.
 //
@@ -21,6 +22,9 @@ const opt = (k, d) => { const i = argv.indexOf(`--${k}`); return i >= 0 && argv[
 const flag = (k) => argv.includes(`--${k}`);
 
 const TOKEN = process.env.META_PAGE_TOKEN || '';
+// Network-secret mode (no token in the session): Anthropic's agent proxy adds
+// "Authorization: Bearer <token>" to every request to graph.facebook.com, so we send none ourselves.
+const PROXY = !TOKEN && process.env.META_AUTH !== 'env';
 const V = process.env.META_GRAPH_VERSION || 'v21.0';
 const G = `https://graph.facebook.com/${V}`;
 const DRY = flag('dry-run');
@@ -30,7 +34,7 @@ const redact = (s) => String(s).split(TOKEN || '\u0000').join('***').replace(/ac
 async function api(method, p, params = {}, body = null, token = TOKEN) {
   const u = new URL(p.startsWith('http') ? p : `${G}/${p}`);
   for (const [k, v] of Object.entries(params)) if (v != null) u.searchParams.set(k, v);
-  u.searchParams.set('access_token', token);
+  if (token) u.searchParams.set('access_token', token);
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -55,11 +59,11 @@ async function ids() {
   const me = await api('GET', 'me', { fields: 'id,name' });
   let acc = null;
   try {
-    const r = await api('GET', 'me/accounts', { fields: `id,name,access_token,${igF}` });
+    const r = await api('GET', 'me/accounts', { fields: `id,name,${PROXY ? '' : 'access_token,'}${igF}` });
     acc = (r.data || []).find((a) => !want || a.id === want) || null;
   } catch (_) { /* a Page token has no /me/accounts */ }
   if (acc) {
-    PAGE_TOKEN = acc.access_token || TOKEN;
+    PAGE_TOKEN = PROXY ? '' : (acc.access_token || TOKEN);
     const igA = acc.instagram_business_account || {};
     return { page: acc.id, name: acc.name, ig: process.env.META_IG_ID || igA.id, igUser: igA.username || '' };
   }
@@ -102,7 +106,6 @@ async function post() {
   if (type === 'feed' && !caption) throw new Error('feed posts need --caption-file');
   const out = { ok: true, type, image: path.basename(file), fb: null, ig: null, errors: [] };
   if (DRY) { out.dryRun = true; out.captionChars = caption.length; console.log(JSON.stringify(out)); return; }
-  if (!TOKEN) throw new Error('META_PAGE_TOKEN is not set');
   const { page, ig } = await ids();
 
   // 1) Facebook: the poster goes up first (Instagram needs its CDN URL)
@@ -136,7 +139,6 @@ async function post() {
 (async () => {
   try {
     if (cmd === 'whoami') {
-      if (!TOKEN) throw new Error('META_PAGE_TOKEN is not set');
       const r = await ids();
       console.log(JSON.stringify({ ok: true, page: r.page, pageName: r.name, ig: r.ig || null, igUsername: r.igUser || null }));
     } else if (cmd === 'post') await post();
