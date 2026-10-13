@@ -272,7 +272,7 @@ body{position:relative;color:var(--ink);font-family:'Inter',sans-serif;-webkit-f
 .price .cur{font-family:'Mono';font-size:${S ? 40 : 34}px;letter-spacing:.06em;margin-top:.3em;margin-right:14px;color:var(--acc)}
 .price .amt{font-family:'Anton';font-size:${S ? 400 : 300}px;letter-spacing:-.01em;line-height:.82}
 .price .unit{font-family:'Inter';font-weight:500;font-size:${S ? 60 : 50}px;align-self:flex-end;margin-left:14px;color:var(--mute)}
-.pnote{font-family:'Mono';font-size:${S ? 22 : 19}px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:${S ? 22 : 18}px 0 ${S ? 30 : 22}px}
+.pnote{font-family:'Mono';font-size:${S ? 22 : 19}px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:${S ? 44 : 36}px 0 ${S ? 30 : 22}px}
 .inc .r{padding:${S ? 16 : 12}px 0}
 .inc .r .n{color:var(--acc);font-family:'Inter';font-weight:300;font-size:${S ? 36 : 30}px;width:28px}
 .inc .r .t{font-size:${S ? 30 : 26}px;font-weight:500}
@@ -417,7 +417,7 @@ ${dept === 'awareness' ? '.dt .d,.steps .r .n,.r .n,.price .cur,.qa .k,.eb .k,.b
 .cut{z-index:2}
 .bigw.front{z-index:4}
 .bigw{position:absolute;left:30px;top:${S ? 300 : 92}px;font-family:'Anton';text-transform:uppercase;line-height:.8;color:var(--acc);white-space:nowrap;z-index:1;font-size:400px;letter-spacing:-.01em}
-.scrim{position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,0) 14%,rgba(0,0,0,0) 40%,rgba(0,0,0,.6) 56%,rgba(0,0,0,.9) 72%,rgba(0,0,0,.95) 100%)}
+.scrim{position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.5) 0%,rgba(0,0,0,0) 14%,rgba(0,0,0,.1) 32%,rgba(0,0,0,.72) 46%,rgba(0,0,0,.92) 60%,rgba(0,0,0,.96) 100%)}
 .usp{background:var(--acc);color:#0D0D0D}
 .r .n,.eb .k{color:var(--acc)}
 .price .amt{font-size:${S ? 300 : 210}px}

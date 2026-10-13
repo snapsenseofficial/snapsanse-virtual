@@ -35,7 +35,7 @@ function fromPoster(f, date) {
   if (ex === '08-tambah-lagi') return { ...f, layout: 'list', items: PK.filter((p) => p.cat === 'addon').map((p) => ({ label: enOf(p).name, value: `RM${p.price}${p.unit ? '/' + p.unit : ''}` })).slice(0, 6), pkg: 'addon' };
   if (ex === '09-tarikh-kahwin') {
     const rank = { 'sangat tinggi': 0, tinggi: 1, sederhana: 2 };
-    const list = WD.filter((w) => w.date > date).sort((a, b) => (rank[a.demand] - rank[b.demand]) || a.date.localeCompare(b.date)).slice(0, 5).sort((a, b) => a.date.localeCompare(b.date));
+    const list = WD.filter((w) => w.date > date).sort((a, b) => (rank[a.demand] - rank[b.demand]) || a.date.localeCompare(b.date)).slice(0, 4).sort((a, b) => a.date.localeCompare(b.date));
     return { ...f, layout: 'dates', items: list.map((w) => { const d = new Date(w.date + 'T00:00:00Z'); return { label: `${d.getUTCDate()} ${MON_EN[d.getUTCMonth()]} ${DAY_EN[w.day] || w.day || ''}`.trim(), value: (w.tags || []).slice(0, 2).map((t) => TAG_EN[t] || t).join(' · ') }; }), pkg: 'wed-ns' };
   }
   return f;
@@ -78,7 +78,8 @@ function enrich(item) {
   const priced = (it.feed.items || []).filter((x) => /RM\s?\d/.test(x.value || '')).length;
   const cat = id && (PK.find((p) => p.id === id) || {}).cat;
   const CAT_USP = { auto: 'From RM150 · reel packages too', konvo: 'From RM120 per grad (min 5)', event: 'From RM200/hr (min 2 hrs)', wedding: 'From RM450 · full prices in catalogue', content: 'From RM1,999 a month', potret: 'From RM350 · full prices in catalogue', produk: 'From RM450 · Shopee & TikTok sizes' };
-  const catU = it.feed.layout === 'list' && priced >= 3 && CAT_USP[cat];
+  // dates posters and multi-package lists get the category line, not one package's USP
+  const catU = ((it.feed.layout === 'list' && priced >= 3) || it.feed.layout === 'dates') && CAT_USP[cat];
   const U = USP_EN || USP;
   const u = USP.items[key] || catU || (id && U.packages[id] && U.packages[id].uspShort) || U.brand || '';
   if (u) { it.feed.usp = it.feed.usp || u; if (it.story) it.story.usp = it.story.usp || u; }
