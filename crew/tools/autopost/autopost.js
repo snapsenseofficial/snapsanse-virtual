@@ -5,7 +5,7 @@
 //   node crew/tools/autopost/autopost.js post --type feed  --image 4-sales-feed.jpg  --caption-file cap.txt [--only fb|ig] [--dry-run]
 //   node crew/tools/autopost/autopost.js post --type story --image 4-sales-story.jpg [--only fb|ig] [--dry-run]
 //
-// Env: META_PAGE_TOKEN (Page access token with pages_manage_posts, pages_read_engagement,
+// Env: META_PAGE_TOKEN (System User or Page access token with pages_manage_posts, pages_read_engagement,
 //      pages_show_list, instagram_basic, instagram_content_publish). Optional META_PAGE_ID, META_IG_ID,
 //      META_GRAPH_VERSION (default v21.0). The token is never printed.
 //
@@ -25,12 +25,12 @@ const V = process.env.META_GRAPH_VERSION || 'v21.0';
 const G = `https://graph.facebook.com/${V}`;
 const DRY = flag('dry-run');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const redact = (s) => String(s).split(TOKEN || '\u0000').join('***');
+const redact = (s) => String(s).split(TOKEN || '\u0000').join('***').replace(/access_token=[^&\s]+/g, 'access_token=***');
 
-async function api(method, p, params = {}, body = null) {
+async function api(method, p, params = {}, body = null, token = TOKEN) {
   const u = new URL(p.startsWith('http') ? p : `${G}/${p}`);
   for (const [k, v] of Object.entries(params)) if (v != null) u.searchParams.set(k, v);
-  u.searchParams.set('access_token', TOKEN);
+  u.searchParams.set('access_token', token);
   let lastErr;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -46,16 +46,26 @@ async function api(method, p, params = {}, body = null) {
   throw new Error(redact(lastErr && lastErr.message));
 }
 
+// Works with a Page token or a System User token (Business Settings): with a system user token the
+// Page and its own Page token come from /me/accounts; Page calls then use that Page token.
+let PAGE_TOKEN = TOKEN;
 async function ids() {
-  let page = process.env.META_PAGE_ID, ig = process.env.META_IG_ID, name = '', igUser = '';
-  if (!page || !ig) {
-    const me = await api('GET', 'me', { fields: 'id,name,instagram_business_account{id,username}' });
-    page = page || me.id; name = me.name || '';
-    ig = ig || (me.instagram_business_account && me.instagram_business_account.id);
-    igUser = (me.instagram_business_account && me.instagram_business_account.username) || '';
+  const want = process.env.META_PAGE_ID;
+  const igF = 'instagram_business_account{id,username}';
+  const me = await api('GET', 'me', { fields: 'id,name' });
+  let acc = null;
+  try {
+    const r = await api('GET', 'me/accounts', { fields: `id,name,access_token,${igF}` });
+    acc = (r.data || []).find((a) => !want || a.id === want) || null;
+  } catch (_) { /* a Page token has no /me/accounts */ }
+  if (acc) {
+    PAGE_TOKEN = acc.access_token || TOKEN;
+    const igA = acc.instagram_business_account || {};
+    return { page: acc.id, name: acc.name, ig: process.env.META_IG_ID || igA.id, igUser: igA.username || '' };
   }
-  if (!page) throw new Error('No Facebook Page id (use a Page access token or set META_PAGE_ID)');
-  return { page, ig, name, igUser };
+  const pg = await api('GET', want || me.id, { fields: `id,name,${igF}` });
+  const igA = pg.instagram_business_account || {};
+  return { page: pg.id, name: pg.name || '', ig: process.env.META_IG_ID || igA.id, igUser: igA.username || '' };
 }
 
 function imageForm(file, extra) {
@@ -65,7 +75,7 @@ function imageForm(file, extra) {
   return fd;
 }
 async function cdnUrl(photoId) {
-  const j = await api('GET', photoId, { fields: 'images' });
+  const j = await api('GET', photoId, { fields: 'images' }, null, PAGE_TOKEN);
   const best = (j.images || []).sort((a, b) => b.width - a.width)[0];
   if (!best) throw new Error(`no image URL for photo ${photoId}`);
   return best.source;
@@ -99,12 +109,12 @@ async function post() {
   let photoId;
   try {
     if (type === 'feed') {
-      const r = await api('POST', `${page}/photos`, {}, imageForm(file, { caption, published: only === 'ig' ? 'false' : 'true' }));
+      const r = await api('POST', `${page}/photos`, {}, imageForm(file, { caption, published: only === 'ig' ? 'false' : 'true' }), PAGE_TOKEN);
       photoId = r.id; if (only !== 'ig') out.fb = { id: r.post_id || r.id };
     } else {
-      const r = await api('POST', `${page}/photos`, {}, imageForm(file, { published: 'false' }));
+      const r = await api('POST', `${page}/photos`, {}, imageForm(file, { published: 'false' }), PAGE_TOKEN);
       photoId = r.id;
-      if (only !== 'ig') { const s = await api('POST', `${page}/photo_stories`, { photo_id: photoId }); out.fb = { id: s.post_id || s.id || photoId }; }
+      if (only !== 'ig') { const s = await api('POST', `${page}/photo_stories`, { photo_id: photoId }, null, PAGE_TOKEN); out.fb = { id: s.post_id || s.id || photoId }; }
     }
   } catch (e) { out.errors.push(`facebook: ${e.message}`); }
 
