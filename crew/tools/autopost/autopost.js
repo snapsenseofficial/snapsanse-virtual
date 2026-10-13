@@ -69,11 +69,12 @@ async function ids() {
   const me = await api('GET', 'me', { fields: 'id,name' });
   let acc = null;
   try {
-    const r = await api('GET', 'me/accounts', { fields: `id,name,${PROXY ? '' : 'access_token,'}${igF}` });
+    const r = await api('GET', 'me/accounts', { fields: `id,name,access_token,${igF}` });
     acc = (r.data || []).find((a) => !want || a.id === want) || null;
   } catch (_) { /* a Page token has no /me/accounts */ }
   if (acc) {
-    PAGE_TOKEN = PROXY ? '' : (acc.access_token || TOKEN);
+    // Page uploads must be made as the Page: use its Page token (held in memory only, never printed)
+    PAGE_TOKEN = acc.access_token || TOKEN;
     const igA = acc.instagram_business_account || {};
     return { page: acc.id, name: acc.name, ig: process.env.META_IG_ID || igA.id, igUser: igA.username || '' };
   }

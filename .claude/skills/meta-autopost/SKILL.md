@@ -25,13 +25,13 @@ Times are Malaysia time (UTC+8).
 ## Steps for one slot
 1. Office: set your crew doc to `running`, detail "<Name>: posting <type> <Dept> <time>" (skill `office-status`).
 2. Read the queue doc with `ArtifactData get`. If `status` is `posted`, stop: it is already done. Never post the same slot twice.
-3. If `META_PAGE_TOKEN` is missing or `whoami` fails:
+3. Run `node crew/tools/autopost/autopost.js whoami` (auth comes from the environment's network secret). If it fails:
    - write `status: "skipped"` and `error: "<short reason>"` to the doc
    - update `settings/meta` with `connected: false` and a `note`
    - set your office status to `waiting`, detail "<Name>: tunggu token Meta"
    - stop.
 4. Set the doc's `status` to `posting`, pinning `if_version`.
-5. Download the poster: Artifact tool `action: "read"`, `url` = the queue, `path` = the doc's `assetId`. It saves a local file.
+5. Download the poster: Artifact tool `action: "read"`, `url` = the queue, `path` = the doc's `assetId`. It saves a local file. (In the repo checkout the same image may also exist at `crew/data/igpack/upload/<date>_<dept>-<type>.jpg`.)
 6. Feed only: write `caption` to a temp file.
 7. Run `autopost.js post --type <type> --image <file> [--caption-file <tmp>]`.
 8. Write the result to the doc:
