@@ -37,4 +37,4 @@ description: SnapSense content planners and creators (Adam, Lili, Khairul, Haziq
 ## Rules
 - Captions are Malay, with at most 2 emoji. Poster text is English.
 - DM keywords are CAR, WEDDING and MOTORCYCLE.
-- Never post directly. The owner schedules posts in Meta Business Suite, or approves them in the office.
+- Posting runs through skill `meta-autopost` (Post Queue + scheduled routines). Never post anything that is not in the queue.
