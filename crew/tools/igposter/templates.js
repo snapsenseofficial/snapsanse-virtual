@@ -84,8 +84,10 @@ function photoFor(item, fmt) {
     if (pricey && cars.length) l = cars;
   }
   if (!l.length) return null;
+  const pin = ((fmt === 'feed' ? item.feed : item.story) || {}).photo;
+  const pinned = pin && l.find((x) => path.basename(x) === pin);
   const n = DEPTS[item.dept] ? DEPTS[item.dept].n : 0;
-  const p = l[(dayIndex(item.date) + n * 2 + (fmt === 'story' ? Math.ceil(l.length / 2) : 0)) % l.length];
+  const p = pinned || l[(dayIndex(item.date) + n * 2 + (fmt === 'story' ? Math.ceil(l.length / 2) : 0)) % l.length];
   const ext = path.extname(p).slice(1).toLowerCase().replace('jpg', 'jpeg');
   const cutP = p.replace(/\.[^.]+$/, '.cut.png');
   const m = photoMeta(path.basename(p));
@@ -242,7 +244,7 @@ body{position:relative;color:var(--ink);font-family:'Inter',sans-serif;-webkit-f
 .eb .k{color:var(--acc)}
 .eb .ln{flex:0 0 64px;height:1.5px;background:currentColor;opacity:.5}
 .hl{${hl};color:var(--ink);overflow-wrap:normal;word-break:normal;hyphens:none}
-.hl em{${em}}
+.hl em{font-style:normal;${em}}
 .sub{font-family:'Inter';font-weight:400;font-size:${S ? 36 : 30}px;line-height:1.3;letter-spacing:-.01em;color:var(--mute);margin-top:${S ? 36 : 28}px;max-width:${S ? 860 : 820}px}
 .note{font-family:'Mono';font-size:${S ? 19 : 16}px;letter-spacing:.06em;color:var(--mute);margin-top:22px;text-transform:none}
 .badge{display:inline-flex;align-items:center;gap:12px;font-family:'Mono';font-size:${S ? 22 : 18}px;letter-spacing:.16em;text-transform:uppercase;color:var(--acc);margin-bottom:22px}

@@ -9,6 +9,7 @@ Owner: Authenticity **Izzah**, Awareness **Balqis**, Trust **Wani**, Sales **Ain
 
 ## What to edit
 Poster fields only: `feed.eyebrow, headline, sub, items[].label/value, price.note/unit, badge, cta, footnote` and `story.headline, sub, prompt, options[]`.
+Optional pins: `feed.pkg` (catalogue id, fixes the package/USP/style even if wording changes) and `feed.photo` / `story.photo` (a file name in the category folder, e.g. `c41.jpg`).
 **Never** change `caption`, `hashtags`, `date`, `layout`, `existingPoster` (captions are Malay and posted as written). Schema and limits: `crew/data/igpack/SCHEMA.md`.
 
 ## Limits
