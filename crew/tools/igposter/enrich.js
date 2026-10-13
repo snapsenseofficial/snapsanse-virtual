@@ -62,7 +62,8 @@ function pkgOf(item) {
   const byName = [...PK].filter((p) => p.cat !== 'addon').sort((a, b) => b.name.length - a.name.length).find((p) => head.includes(p.name.toLowerCase()));
   if (byName) return byName.id;
   // 2) keywords in the poster text, then (sales only) in the caption
-  const feedTxt = [f.eyebrow, f.headline, f.sub, ...(f.items || []).map((x) => x.label)].join(' ');
+  // list items are left out: a general tip that mentions 'wedding' or 'car' is not a package post
+  const feedTxt = [f.eyebrow, f.headline, f.sub].join(' ');
   for (const txt of [feedTxt, item.dept === 'sales' ? item.caption : '']) for (const [re, id] of PKG_HINTS) if (re.test(txt || '')) return id;
   return null;
 }

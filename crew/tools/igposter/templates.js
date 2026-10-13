@@ -387,7 +387,7 @@ ${dept === 'awareness' ? '.dt .d,.steps .r .n,.r .n,.price .cur,.qa .k,.eb .k,.b
     return `
 .ph,.cut{position:absolute;inset:0;background-size:cover;background-position:center 40%;filter:saturate(.9) contrast(1.08);z-index:0}
 .cut{z-index:2}
-.scrim{position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,.05) 30%,rgba(0,0,0,.05) 48%,rgba(0,0,0,.78) 74%,rgba(0,0,0,.92) 100%)}
+.scrim{position:absolute;inset:0;z-index:3;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.6) 0%,rgba(0,0,0,.2) 22%,rgba(0,0,0,.35) 34%,rgba(0,0,0,.72) 50%,rgba(0,0,0,.9) 68%,rgba(0,0,0,.95) 100%)}
 .bigw{position:absolute;left:36px;top:${S ? 300 : 112}px;font-family:'Archivo';text-transform:uppercase;letter-spacing:-.03em;line-height:.82;color:#fff;white-space:nowrap;z-index:2;font-size:300px;-webkit-mask-image:linear-gradient(180deg,#000 45%,rgba(0,0,0,.25) 100%);opacity:.94}
 .onum{position:absolute;font-family:'Archivo';line-height:.8;color:transparent;-webkit-text-stroke:3px var(--acc);z-index:2;letter-spacing:-.02em}
 .band .ph,.band .cut{bottom:auto;height:620px;background-position:center 62%}
@@ -487,6 +487,7 @@ function photoCss(style, fmt, g) {
 .bgword,.numeral,.glow,.frame{display:none}
 .rows{border-top-color:rgba(246,241,232,.6)}
 .box{border-color:rgba(246,241,232,.7);background:rgba(0,0,0,.25);backdrop-filter:blur(6px)}
+.usp{background:#F6F1E8;color:#141312}
 .opt.b{-webkit-text-stroke-color:#F6F1E8}
 .hl em{${style === 'block' ? '-webkit-text-stroke-color:#F6F1E8' : ''}}
 `;
@@ -763,7 +764,7 @@ function usesPhoto(style, fmt, layout) {
   const S = fmt === 'story';
   const PHOTO_LAYOUTS = S ? ['announce', 'question', 'tip', 'poll', 'countdown'] : ['hook', 'announce', 'quote'];
   const refStyle = ['street', 'ivory', 'portrait'].includes(style) || (style === 'impact' && (S || ['hook', 'announce'].includes(layout)));
-  return refStyle || (style !== 'impact' && PHOTO_LAYOUTS.includes(layout));
+  return refStyle || (!['impact', 'editorial'].includes(style) && PHOTO_LAYOUTS.includes(layout));
 }
 // A motorcycle photo on an automotive post: the poster talks about bikes, never "car".
 const isMoto = (ph, item) => !!(ph && /^m/.test(ph.file) && photoCat(item) === 'auto');
