@@ -1,9 +1,9 @@
 ---
 name: meta-autopost
-description: SnapSense planners (Adam, Lili, Khairul, Haziq) — publish the day's rendered story and feed poster to the SnapSense Facebook Page and Instagram at the scheduled time, from the Post Queue, and record the result. Use when a posting routine fires or the owner asks to post now.
+description: SnapSense planners (Adam, Lili, Khairul, Haziq) — publish the day's rendered story and feed poster to the SnapSense Facebook Page, Instagram and Threads (feed only) at the scheduled time, from the Post Queue, and record the result. Use when a posting routine fires or the owner asks to post now.
 ---
 
-# Auto-post to Facebook + Instagram (SnapSense planners)
+# Auto-post to Facebook + Instagram + Threads (SnapSense planners)
 
 | Dept | Planner (office id) | Story | Feed |
 |---|---|---|---|
@@ -15,9 +15,10 @@ Times are Malaysia time (UTC+8).
 
 - **Post Queue** (posters + captions + status): https://claude.ai/artifact/3uRoQJpfoTLVZUPUF19Z8v
   - collection `posts`, doc id `<YYYY-MM-DD>_<dept>_<feed|story>`
-  - fields: `date, time, at, dept, type, agent, assetId, url, caption, status (scheduled|posting|posted|failed|skipped), fb, ig, error, postedAt`
+  - fields: `date, time, at, dept, type, agent, assetId, url, caption, status (scheduled|posting|posted|failed|skipped), fb, ig, threads, threadsError, error, postedAt`
   - doc `settings/meta`: connection state shown on the page.
-- **Script**: `node crew/tools/autopost/autopost.js` (`whoami`, `post --type feed|story --image <jpg> [--caption-file f] [--only fb|ig] [--dry-run]`). It prints one JSON line and exits 1 on failure.
+- **Script**: `node crew/tools/autopost/autopost.js` (`whoami`, `post --type feed|story --image <jpg> [--caption-file f] [--only fb|ig|threads] [--no-threads] [--dry-run]`). It prints one JSON line and exits 1 on failure.
+- **Threads**: feed posts also go to Threads (no stories there). The script cuts the caption to 500 characters, keeps the WhatsApp/DM line and one topic tag. It needs a second Network secret on host `graph.threads.net` (Bearer) holding the Threads user token (`threads_basic, threads_content_publish`, expires after 60 days). A Threads failure lands in `threadsError` and does not fail the FB/IG post.
 - **Needs** (owner sets once): a **Network secret** on the cloud environment for host `graph.facebook.com` (Bearer, Authorization header) holding a System User token, or env `META_PAGE_TOKEN`. Old note:
   - env `META_PAGE_TOKEN`: a Page access token with `pages_manage_posts, pages_read_engagement, pages_show_list, instagram_basic, instagram_content_publish`
   - network access to `graph.facebook.com` and `*.fbcdn.net`.
@@ -35,10 +36,10 @@ Times are Malaysia time (UTC+8).
 6. Feed only: write `caption` to a temp file.
 7. Run `autopost.js post --type <type> --image <file> [--caption-file <tmp>]`.
 8. Write the result to the doc:
-   - success: `status: "posted"`, `fb`, `ig`, `postedAt`
+   - success: `status: "posted"`, `fb`, `ig`, `threads` (feed), `postedAt`; if the output has `threadsError`, store it too
    - failure: `status: "failed"`, `error` (the message only, never the token).
-   - If one platform succeeded, keep its id. A retry must use `--only` for the platform that failed.
-9. Update `settings/meta` from `whoami`: `connected`, `pageName`, `igUsername`, `checkedAt`.
+   - If one platform succeeded, keep its id. A retry must use `--only` for the platform that failed (`--only threads` for a missed Threads post).
+9. Update `settings/meta` from `whoami`: `connected`, `pageName`, `igUsername`, `threadsUsername`, `checkedAt`.
 10. Office: set your crew doc to `idle`, detail "Siap: <type> <Dept> <time> dipost". On failure use `waiting` with a short reason.
 
 ## Rules
