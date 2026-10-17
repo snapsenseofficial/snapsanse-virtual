@@ -1,0 +1,20 @@
+{
+  "timezone": "Asia/Kuala_Lumpur",
+  "google": {
+    "clientId": "xxxxxxxx.apps.googleusercontent.com",
+    "clientSecret": "GOCSPX-xxxxxxxx",
+    "calendarId": "primary",
+    "bookingsSheetId": "the long id in the Sheet URL",
+    "bookingsRange": "Form Responses 1!A:Z",
+    "driveReportsFolderId": "id of the Drive folder for reports"
+  },
+  "tiktok": {
+    "clientKey": "from developers.tiktok.com",
+    "clientSecret": "from developers.tiktok.com",
+    "redirectUri": "http://127.0.0.1:4317/oauth/tiktok"
+  },
+  "claude": {
+    "bin": "claude",
+    "model": ""
+  }
+}
