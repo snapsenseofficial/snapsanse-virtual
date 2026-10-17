@@ -4,6 +4,7 @@
 //   node crew/tools/autopost/autopost.js whoami
 //   node crew/tools/autopost/autopost.js post --type feed  --image 4-sales-feed.jpg  --caption-file cap.txt [--only fb|ig|threads] [--no-threads] [--dry-run]
 //   node crew/tools/autopost/autopost.js post --type story --image 4-sales-story.jpg [--only fb|ig] [--dry-run]
+//   node crew/tools/autopost/autopost.js delete [--fb <post or story id>] [--ig <media id>]   (owner-approved removals only)
 //
 // Auth: a Network secret on graph.facebook.com (Authorization: Bearer, added by the agent proxy),
 //       or env META_PAGE_TOKEN (System User or Page access token) with pages_manage_posts, pages_read_engagement,
@@ -205,6 +206,24 @@ async function post() {
   if (!out.ok) process.exitCode = 1;
 }
 
+async function del() {
+  const out = { ok: true, fb: null, ig: null, errors: [] };
+  const fb = opt('fb'), ig = opt('ig');
+  if (!fb && !ig) throw new Error('delete needs --fb and/or --ig');
+  await ids();
+  if (fb) {
+    try { const r = await api('DELETE', fb, {}, null, PAGE_TOKEN); out.fb = r.success === false ? 'not deleted' : 'deleted'; }
+    catch (e) { out.errors.push(`facebook: ${e.message}`); }
+  }
+  if (ig) {
+    try { const r = await api('DELETE', ig); out.ig = r.success === false ? 'not deleted' : 'deleted'; }
+    catch (e) { out.errors.push(`instagram: ${e.message}`); }
+  }
+  out.ok = out.errors.length === 0;
+  console.log(JSON.stringify(out));
+  if (!out.ok) process.exitCode = 1;
+}
+
 (async () => {
   try {
     if (cmd === 'whoami') {
@@ -213,7 +232,8 @@ async function post() {
       try { const t = await threadsMe(); th = { threads: t.id, threadsUsername: t.username || null }; } catch (e) { th.threadsError = e.message; }
       console.log(JSON.stringify({ ok: true, page: r.page, pageName: r.name, ig: r.ig || null, igUsername: r.igUser || null, ...th }));
     } else if (cmd === 'post') await post();
-    else { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 20).join('\n')); }
+    else if (cmd === 'delete') await del();
+    else { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 21).join('\n')); }
   } catch (e) {
     console.log(JSON.stringify({ ok: false, error: redact(e.message) }));
     process.exitCode = 1;
