@@ -50,7 +50,7 @@ var STATS=[
   {n:"20K", ms:"botol Haos Ek? terjual dalam 3 bulan", en:"Haos Ek? bottles sold in 3 months"}
 ];
 var CAMPS=[
-  {brand:"Masdora Jewellery", name:{ms:"Amira Series Collection",en:"Amira Series Collection"},
+  {key:"masdora",brand:"Masdora Jewellery", name:{ms:"Amira Series Collection",en:"Amira Series Collection"},
    tag:{ms:"Marketing + Videografi",en:"Marketing + Videography"},
    role:{ms:"Project Manager",en:"Project Manager"}, period:{ms:"Jan – Jul 2026",en:"Jan – Jul 2026"}, budget:"RM100,000",
    problem:{ms:"Bajet dan masa yang terhad untuk pelancaran koleksi baharu.",en:"A limited budget and timeline for a new collection launch."},
@@ -58,7 +58,7 @@ var CAMPS=[
    results:[{n:"4J",en_n:"4M",ms:"jangkauan",en:"reach"},{n:"3,500",ms:"leads",en:"leads"},{n:"+40%",ms:"jualan",en:"sales"}],
    yt:[{id:"0tuCKVUMFAQ",t:"Kenangan Tidak Ternilai",s:"Masdora Raya 2026"},{id:"0_pnF8EKt4A",t:"Serumpun Kasih",s:"Masdora Jewellery"}],
    tt:[{f:"tt-masdora-1",h:"TTM1",ms:"Live bersama Amira Othman",en:"Live with Amira Othman"},{f:"tt-masdora-2",h:"TTM2",ms:"Koleksi Amira",en:"Amira Collection"},{f:"tt-masdora-3",h:"TTM3",ms:"Terima kasih semua",en:"Thank you, everyone"}]},
-  {brand:"Haos Ek?", name:{ms:"Tekan, Goncang, Buka & Menang",en:"Press, Shake, Open & Win"},
+  {key:"haos",brand:"Haos Ek?", name:{ms:"Tekan, Goncang, Buka & Menang",en:"Press, Shake, Open & Win"},
    tag:{ms:"Marketing + Videografi",en:"Marketing + Videography"},
    role:{ms:"Asst. Project Manager",en:"Asst. Project Manager"}, period:{ms:"2023 – 2024",en:"2023 – 2024"}, budget:"RM50,000",
    problem:{ms:"Jenama yang belum dikenali dalam niche yang kecil.",en:"An unknown brand in a small niche."},
@@ -107,6 +107,28 @@ function hbars(title,note,rows,l){
     '<details class="sc-tbl"><summary>'+C.table+'</summary><table><thead><tr><th>'+C.item+'</th><th>'+C.val+'</th></tr></thead><tbody>'+
     rows.map(function(r){return '<tr><td>'+r.label+'</td><td>'+(r.d||fmt(r.v,l))+'</td></tr>';}).join("")+'</tbody></table></details></figure>';
 }
+var TT={"masdora": {"videos": 159, "t": {"likes": 109513, "comments": 3153, "saves": 6542, "shares": 3616}, "months": [["2026-01", 5, 212], ["2026-02", 31, 26866], ["2026-03", 31, 18663], ["2026-04", 32, 60014], ["2026-05", 26, 1056], ["2026-06", 20, 919], ["2026-07", 14, 1783]], "top": [{"t": "Semoga @Amira Othman diberikan kesihatan…", "s": "@masdorajewellerymy · 18 Apr", "l": 54500, "c": 1343, "sv": 3485, "sh": 1303}, {"t": "Done buat trend Raya ni", "s": "@masdorajewelry_os · 5 Mac", "l": 8705, "c": 244, "sv": 458, "sh": 341}, {"t": "Rugi lah siapa yang tak join live semalam", "s": "@masdorajewelry_os · 4 Mac", "l": 7577, "c": 132, "sv": 434, "sh": 151}, {"t": "Jumpa korang di Meet And Greet di Masdora KL", "s": "@masdorajewelry_os · 10 Feb", "l": 5362, "c": 290, "sv": 328, "sh": 118}, {"t": "Jangan lupa janji temu kita, 15/2", "s": "@masdorajewelry_os · 10 Feb", "l": 4455, "c": 93, "sv": 352, "sh": 147}], "followers": [["@masdorajewellerymy", 217200], ["@masdorajewelry_os", 187200]], "period": {"ms": "Jan – Jul 2026, 2 akaun", "en": "Jan – Jul 2026, 2 accounts"}}, "haos": {"videos": 123, "t": {"likes": 46869, "comments": 1065, "saves": 4664, "shares": 1732}, "months": [["2024-03", 14, 3420], ["2024-04", 21, 2287], ["2024-05", 9, 9231], ["2024-06", 9, 2118], ["2024-07", 15, 5198], ["2024-08", 15, 15751], ["2024-09", 19, 5728], ["2024-10", 16, 2850], ["2024-11", 4, 232], ["2024-12", 1, 54]], "top": [{"t": "Haos Ek? ASMR", "s": "24 Mei 2024", "l": 8169, "c": 77, "sv": 827, "sh": 116}, {"t": "Takkan nak tunggu umur 80 tahun baru menang", "s": "20 Ogo 2024", "l": 4433, "c": 42, "sv": 135, "sh": 84}, {"t": "Citarasa kita, rahsia perpaduan kita: Teh Tarik", "s": "25 Ogo 2024", "l": 2647, "c": 25, "sv": 230, "sh": 74}, {"t": "Sempena bulan kemerdekaan ke-67", "s": "16 Ogo 2024", "l": 2420, "c": 114, "sv": 404, "sh": 196}, {"t": "Lari laju-laju nak gi manew tuuu", "s": "22 Jul 2024", "l": 2362, "c": 23, "sv": 204, "sh": 22}], "period": {"ms": "Mac – Dis 2024 (video 2023 tiada dalam rakaman)", "en": "Mar – Dec 2024 (2023 videos not in the recording)"}}};
+var MON={ms:["Jan","Feb","Mac","Apr","Mei","Jun","Jul","Ogo","Sep","Okt","Nov","Dis"],en:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]};
+var TTX={
+  ms:{h:"Prestasi TikTok",src:"Dikira daripada video yang dipost di TikTok, dirakam 19 Okt 2026.",vids:"video",likes:"likes",cmt:"komen",sav:"saves",shr:"shares",fol:"pengikut",
+      mon:"Likes mengikut bulan",monN:"Jumlah likes video yang dipost setiap bulan",top:"5 video terbaik",topN:"Likes setiap video",tbl:"Butiran video terbaik",vid:"Video"},
+  en:{h:"TikTok performance",src:"Counted from videos posted on TikTok, recorded 19 Oct 2026.",vids:"videos",likes:"likes",cmt:"comments",sav:"saves",shr:"shares",fol:"followers",
+      mon:"Likes by month",monN:"Total likes on videos posted each month",top:"Top 5 videos",topN:"Likes per video",tbl:"Top video details",vid:"Video"}
+};
+function short(n,l){return n>=1e6?(n/1e6).toFixed(1).replace(".0","")+(l==="en"?"M":"J"):n>=1000?(n/1000).toFixed(n>=1e4?0:1).replace(".0","")+"K":String(n);}
+function ttBlock(key,l){
+  var d=TT[key]; if(!d)return ""; var k=TTX[l];
+  var tiles=[[d.videos,k.vids],[d.t.likes,k.likes],[d.t.comments,k.cmt],[d.t.saves,k.sav],[d.t.shares,k.shr]];
+  if(d.followers){var f=0; d.followers.forEach(function(x){f+=x[1];}); tiles.push([f,k.fol]);}
+  var monRows=d.months.map(function(m){var p=m[0].split("-"); return {label:MON[l][+p[1]-1]+" "+p[0],v:m[2],d:fmt(m[2],l)};});
+  var topRows=d.top.map(function(x){return {label:x.t+" · "+x.s,v:x.l,d:fmt(x.l,l)};});
+  return '<div class="sc-tt"><h4 class="sc-sub">'+k.h+' · '+d.period[l]+'</h4>'+
+    '<div class="sc-tiles">'+tiles.map(function(t){return '<div><b>'+short(t[0],l)+'</b><span>'+t[1]+'</span></div>';}).join("")+'</div>'+
+    '<div class="sc-charts">'+hbars(k.mon,k.monN,monRows,l)+hbars(k.top,k.topN,topRows,l)+'</div>'+
+    '<details class="sc-tbl"><summary>'+k.tbl+'</summary><table><thead><tr><th>'+k.vid+'</th><th>'+k.likes+'</th><th>'+k.cmt+'</th><th>'+k.sav+'</th><th>'+k.shr+'</th></tr></thead><tbody>'+
+    d.top.map(function(x){return '<tr><td>'+x.t+'<br><small>'+x.s+'</small></td><td>'+fmt(x.l,l)+'</td><td>'+fmt(x.c,l)+'</td><td>'+fmt(x.sv,l)+'</td><td>'+fmt(x.sh,l)+'</td></tr>';}).join("")+
+    '</tbody></table></details><p class="sc-src">'+k.src+'</p></div>';
+}
 var PLAY='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13l11-6.5z"/></svg>';
 function L(){return (document.documentElement.lang||"").indexOf("en")===0?"en":"ms";}
 function tx(v,l){return typeof v==="string"?v:v[l];}
@@ -139,6 +161,7 @@ function campSec(l){
       '<dl class="sc-meta"><div><dt>'+k.role+'</dt><dd>'+c.role[l]+'</dd></div><div><dt>'+k.period+'</dt><dd>'+c.period[l]+'</dd></div><div><dt>'+k.budget+'</dt><dd>'+c.budget+'</dd></div></dl>'+
       '<div class="sc-story"><div><h4>'+k.problem+'</h4><p>'+c.problem[l]+'</p></div><div><h4>'+k.strategy+'</h4><p>'+c.strategy[l]+'</p></div></div>'+
       '<div class="sc-kpi">'+c.results.map(function(r){return '<div><b>'+num(r,l)+'</b><span>'+r[l]+'</span></div>';}).join("")+'</div>'+
+      ttBlock(c.key,l)+
       '<h4 class="sc-sub">'+k.films+'</h4><div class="sc-grid h">'+c.yt.map(function(v){return ytCard(v,l);}).join("")+'</div>'+
       '<h4 class="sc-sub">'+k.social+'</h4><div class="sc-grid v">'+c.tt.map(function(v){return mp4Card(v,l);}).join("")+'</div></article>';
     }).join("")+'</div></section>';
