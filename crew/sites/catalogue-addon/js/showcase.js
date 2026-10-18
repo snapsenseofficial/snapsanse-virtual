@@ -75,6 +75,38 @@ var REELS=[
   {f:"reel-tgbm-3",h:"TGBM3",t:"TGBM",s:"Reel"},
   {f:"short-cara-penggunaan",h:"CARA",t:{ms:"Cara Penggunaan",en:"How to Use"},s:{ms:"Video produk",en:"Product explainer"}}
 ];
+/* Graf bar mendatar (HTML, responsif). Satu siri = satu warna; nilai dilabel terus; jadual untuk pembaca skrin. */
+var CHART={
+  ms:{tiktok:"Pertumbuhan pengikut TikTok",tiktokNote:"Dalam 3 bulan",before:"Mula",after:"Selepas 3 bulan",
+      sales:"Jualan Masdora (indeks, sebelum kempen = 100)",salesBefore:"Sebelum kempen",salesAfter:"Selepas kempen",
+      ig:"Post Instagram SnapSense paling disukai",igNote:"Jumlah likes setiap post",likes:"likes",table:"Lihat dalam jadual",item:"Item",val:"Nilai",
+      igTot:"post",igLikes:"likes keseluruhan",igFol:"pengikut Instagram"},
+  en:{tiktok:"TikTok follower growth",tiktokNote:"In 3 months",before:"Start",after:"After 3 months",
+      sales:"Masdora sales (index, pre-campaign = 100)",salesBefore:"Before campaign",salesAfter:"After campaign",
+      ig:"Most-liked SnapSense Instagram posts",igNote:"Likes per post",likes:"likes",table:"View as table",item:"Item",val:"Value",
+      igTot:"posts",igLikes:"total likes",igFol:"Instagram followers"}
+};
+var IG={posts:42,likes:248,followers:1390,top:[
+  {ms:"Empty Page × ROTF, MAHA 2024",en:"Empty Page × ROTF, MAHA 2024",v:26,u:"https://www.instagram.com/p/C_8pjj6TnsT/"},
+  {ms:"Sony Portrait Workshop (a9 III)",en:"Sony Portrait Workshop (a9 III)",v:16,u:"https://www.instagram.com/p/DHSWUTlz9dI/"},
+  {ms:"Sony Portrait Workshop",en:"Sony Portrait Workshop",v:15,u:"https://www.instagram.com/p/DHSWJ3EzcH7/"},
+  {ms:"Potret Raya · Fujifilm",en:"Raya portraits · Fujifilm",v:13,u:"https://www.instagram.com/p/DHiB8sOzX1c/"},
+  {ms:"Sony Workshop · cahaya semula jadi",en:"Sony Workshop · natural light",v:11,u:"https://www.instagram.com/p/DHREronzbRu/"},
+  {ms:"Karnival Rakyat Karangkraf & Sinar",en:"Karangkraf & Sinar People's Carnival",v:11,u:"https://www.instagram.com/p/C945sr1yL95/"}
+]};
+function fmt(n,l){return n.toLocaleString(l==="en"?"en-MY":"ms-MY");}
+function hbars(title,note,rows,l){
+  var max=0; rows.forEach(function(r){if(r.v>max)max=r.v;});
+  var C=CHART[l];
+  return '<figure class="sc-chart"><figcaption><strong>'+title+'</strong>'+(note?'<small>'+note+'</small>':'')+'</figcaption>'+
+    '<div class="sc-bars" role="img" aria-label="'+title+'">'+rows.map(function(r){
+      var w=max?Math.max(0.8,r.v/max*100):0, d=r.d||fmt(r.v,l);
+      var lab=r.u?'<a href="'+r.u+'" target="_blank" rel="noopener">'+r.label+'</a>':r.label;
+      return '<div class="sc-row" title="'+r.label+': '+d+'"><span class="sc-lab">'+lab+'</span><span class="sc-track"><span class="sc-bar" style="width:'+w.toFixed(1)+'%"></span></span><span class="sc-num">'+d+'</span></div>';
+    }).join("")+'</div>'+
+    '<details class="sc-tbl"><summary>'+C.table+'</summary><table><thead><tr><th>'+C.item+'</th><th>'+C.val+'</th></tr></thead><tbody>'+
+    rows.map(function(r){return '<tr><td>'+r.label+'</td><td>'+(r.d||fmt(r.v,l))+'</td></tr>';}).join("")+'</tbody></table></details></figure>';
+}
 var PLAY='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5v13l11-6.5z"/></svg>';
 function L(){return (document.documentElement.lang||"").indexOf("en")===0?"en":"ms";}
 function tx(v,l){return typeof v==="string"?v:v[l];}
@@ -95,7 +127,9 @@ function mp4Card(v,l){
 function resultsSec(l){
   var k=T[l];
   return '<section id="hasil" class="sc-res"><div class="wrap"><div class="sec-head"><div><span class="mono eyebrow">'+k.resEyebrow+'</span><h2>'+k.resTitle+'</h2></div><p class="lead">'+k.resLead+'</p></div>'+
-    '<div class="sc-stats">'+STATS.map(function(s){return '<div class="sc-stat"><b>'+num(s,l)+'</b><span>'+s[l]+'</span></div>';}).join("")+'</div></div></section>';
+    '<div class="sc-stats">'+STATS.map(function(s){return '<div class="sc-stat"><b>'+num(s,l)+'</b><span>'+s[l]+'</span></div>';}).join("")+'</div>'+
+    '<div class="sc-charts">'+hbars(CHART[l].tiktok,CHART[l].tiktokNote,[{label:CHART[l].before,v:500},{label:CHART[l].after,v:187000,d:"187K"}],l)+
+    hbars(CHART[l].sales,"",[{label:CHART[l].salesBefore,v:100},{label:CHART[l].salesAfter,v:140,d:"140 (+40%)"}],l)+'</div></div></section>';
 }
 function campSec(l){
   var k=T[l];
@@ -113,6 +147,8 @@ function ccSec(l){
   var k=T[l];
   return '<section id="content-creator" class="sc-cc"><div class="wrap"><div class="sec-head"><div><span class="mono eyebrow">'+k.ccEyebrow+'</span><h2>'+k.ccTitle+'</h2></div><p class="lead">'+k.ccLead+'</p></div>'+
     '<div class="sc-growth"><div><b>500</b><span>→</span><b>187K</b></div><ul>'+k.skills.map(function(s){return '<li>'+s+'</li>';}).join("")+'</ul></div>'+
+    '<div class="sc-ig"><div class="sc-igstats"><div><b>'+fmt(IG.followers,l)+'</b><span>'+CHART[l].igFol+'</span></div><div><b>'+IG.posts+'</b><span>'+CHART[l].igTot+'</span></div><div><b>'+IG.likes+'</b><span>'+CHART[l].igLikes+'</span></div></div>'+
+    hbars(CHART[l].ig,CHART[l].igNote,IG.top.map(function(t){return {label:t[l],v:t.v,u:t.u,d:t.v+" "+CHART[l].likes};}),l)+'</div>'+
     '<h4 class="sc-sub">'+k.reels+'</h4><div class="sc-grid v">'+REELS.map(function(v){return mp4Card(v,l);}).join("")+'</div>'+
     '<p class="sc-cta"><a class="btn pri" href="#harga" data-sc="cc">'+k.ccCta+' →</a></p></div></section>';
 }

@@ -36,3 +36,28 @@
 .sc-growth li{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px}
 .sc-cta{display:flex;justify-content:center;margin:32px 0 0}
 @media (max-width:560px){.sc-kpi{grid-template-columns:1fr 1fr 1fr;gap:8px}.sc-kpi div{padding:10px}.sc-kpi b{font-size:26px}.sc-grid.v{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* graf */
+.sc-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+.sc-chart{margin:0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}
+.sc-chart figcaption{display:flex;flex-direction:column;gap:2px;margin-bottom:14px}
+.sc-chart figcaption strong{font-size:15px}
+.sc-chart figcaption small{color:var(--muted);font-size:13px}
+.sc-bars{display:flex;flex-direction:column;gap:12px}
+.sc-row{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;align-items:center;gap:10px;font-size:14px}
+.sc-lab{color:var(--ink);line-height:1.25}
+.sc-lab a{color:inherit;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.sc-track{height:14px;border-radius:0 4px 4px 0;background:transparent;border-left:1px solid var(--muted)}
+.sc-bar{display:block;height:100%;background:var(--amber-ink);border-radius:0 4px 4px 0}
+.sc-row:hover .sc-bar{filter:brightness(1.15)}
+.sc-num{font-family:var(--mono);font-size:13px;color:var(--ink);white-space:nowrap}
+.sc-tbl{margin-top:12px;font-size:13px;color:var(--muted)}
+.sc-tbl summary{cursor:pointer}
+.sc-tbl table{border-collapse:collapse;margin-top:8px;width:100%}
+.sc-tbl th,.sc-tbl td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)}
+.sc-ig{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:12px;margin-top:22px}
+.sc-igstats{display:grid;gap:12px}
+.sc-igstats div{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.sc-igstats b{font-family:var(--display);font-weight:800;font-size:clamp(28px,4vw,40px);line-height:1}
+.sc-igstats span{color:var(--muted);font-size:14px}
+@media (max-width:760px){.sc-ig{grid-template-columns:1fr}.sc-igstats{grid-template-columns:repeat(3,minmax(0,1fr))}.sc-row{grid-template-columns:minmax(80px,40%) 1fr auto}}
