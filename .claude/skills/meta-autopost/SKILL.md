@@ -23,6 +23,9 @@ Times are Malaysia time (UTC+8).
   - env `META_PAGE_TOKEN`: a Page access token with `pages_manage_posts, pages_read_engagement, pages_show_list, instagram_basic, instagram_content_publish`
   - network access to `graph.facebook.com` and `*.fbcdn.net`.
 
+## Current scope (owner's decision, 24 Oct 2026)
+**Stories only.** The owner turned off feed posting on Facebook and Instagram, and the four feed routines are disabled. If a feed slot fires anyway, do not post. Write `status: "cancelled"` to its doc and stop. AI-made feed posts were removed from Facebook (39 deleted through the API). Instagram does not allow API deletes or archives, so the owner archives those posts in the app.
+
 ## Steps for one slot
 1. Office: set your crew doc to `running`, detail "<Name>: posting <type> <Dept> <time>" (skill `office-status`).
 2. Read the queue doc with `ArtifactData get`. If `status` is `posted`, stop: it is already done. Never post the same slot twice.
