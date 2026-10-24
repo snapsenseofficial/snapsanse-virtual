@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SnapSense Virtual Office</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'><rect x='2' y='0' width='4' height='2' fill='%232b1d14'/><rect x='2' y='2' width='4' height='2' fill='%23f6d5b8'/><rect x='1' y='4' width='6' height='3' fill='%23e5484d'/><rect x='2' y='7' width='4' height='1' fill='%2326324a'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><img id="brand-logo" src="logo.png" alt="SnapSense" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>SNAPSENSE</span><em>VIRTUAL OFFICE</em></div>
+    <div class="stats" id="stats"></div>
+    <div class="actions">
+      <div class="seg" role="group" aria-label="View">
+        <button id="view2d" class="btn" aria-pressed="true">2D</button><button id="view3d" class="btn" aria-pressed="false">3D</button>
+      </div>
+      <button id="spin" class="btn" hidden aria-pressed="false" title="Slowly orbit the camera (great for recording)">⟳ Orbit</button>
+      <button id="resetcam" class="btn" hidden title="Back to the default camera">⌂ Reset</button>
+      <button id="sound" class="btn" aria-pressed="false" title="Chime when an agent needs your approval">🔕 Sound off</button>
+      <span id="conn" class="conn">● connecting…</span>
+    </div>
+  </header>
+  <main class="layout">
+    <section class="stage" aria-label="Office floor">
+      <canvas id="office"></canvas>
+      <div id="zoom2d" class="zoomctl" role="group" aria-label="Zoom">
+        <button id="zin" class="btn" title="Zoom in (or scroll)">+</button><button id="zout" class="btn" title="Zoom out">−</button><button id="zfit" class="btn" title="Show the whole office">Fit</button>
+      </div>
+      <div id="stage3d" hidden></div>
+      <p id="msg3d" class="msg3d" hidden></p>
+    </section>
+    <aside class="panel">
+      <section id="crew" class="crew" hidden>
+        <h2>Live crew</h2>
+        <div id="connections" class="connections"></div>
+        <div id="approvals" class="approvals"></div>
+        <details id="jobs" class="jobs"><summary>Tugasan pasukan</summary><div id="joblist"></div></details>
+      </section>
+      <h2>Agents</h2>
+      <div id="agents" class="agents"></div>
+      <h2>Activity</h2>
+      <ol id="log" class="log"></ol>
+    </aside>
+  </main>
+  <script src="sprites.js"></script>
+  <script src="mascots.js"></script>
+  <script src="roles.js"></script>
+  <script src="toon.js"></script>
+  <script src="scene.js"></script>
+  <script src="world.js"></script>
+  <script src="world3d.js"></script>
+  <script src="demo.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
