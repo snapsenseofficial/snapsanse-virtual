@@ -4,7 +4,7 @@
 # Takes the live sites' current files, overlays the add-on, and deploys the zip through the Netlify API.
 # Photos are fetched at deploy time, so none are stored in this repo.
 # Auth: a Network secret on api.netlify.com (Bearer), injected by the agent proxy. Needs *.netlify.app allowed.
-# Usage: crew/tools/sitedeploy/deploy-catalogue.sh [--dry-run]
+# Usage: [EXTRA=dir] crew/tools/sitedeploy/deploy-catalogue.sh [--dry-run]
 set -euo pipefail
 SITE_ID=dfa2c43e-67a1-4b73-a0e8-9e76f8417d46
 SITE=https://snapsensecatalogue.netlify.app
@@ -24,6 +24,9 @@ while read -r f; do
   curl -sSf "$SITE$f" -o "$WORK/site$f"
 done < "$WORK/paths"
 cp -r "$ADDON"/. "$WORK/site/"
+# EXTRA=dir adds files the repo must not hold (client photos, e.g. img/konvo-*.jpg). Once live they are
+# carried forward by later deploys, which start from the live file list.
+[ -n "${EXTRA:-}" ] && cp -r "$EXTRA"/. "$WORK/site/"
 pf_deploy=$(curl -sSf "$API/sites/$PF_ID" | jq -r .published_deploy.id)
 curl -sSf "$API/deploys/$pf_deploy/files" | jq -r '.[].path' > "$WORK/pf-paths"
 mkdir -p "$WORK/site/portfolio"
