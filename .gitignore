@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.log
+dist/
+office.config.json
+crew/config.json
+crew/secrets/
+crew/data/
+crew/output/

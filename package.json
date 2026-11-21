@@ -1,0 +1,21 @@
+{
+  "name": "snapsense-pixel-office",
+  "version": "0.1.0",
+  "description": "A live pixel-art virtual office for your Claude Code agents. Every session becomes a tiny worker at a desk.",
+  "license": "MIT",
+  "main": "server.js",
+  "bin": {
+    "pixel-office": "server.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "demo": "node server.js --demo",
+    "hooks:install": "node bin/install-hooks.js",
+    "hooks:uninstall": "node bin/install-hooks.js --uninstall",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": ["claude", "claude-code", "pixel-art", "agents", "dashboard", "virtual-office"]
+}
