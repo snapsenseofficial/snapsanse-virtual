@@ -1,0 +1,103 @@
+/* Susun atur mesra pengguna (Nov 2026): pencari servis, kad pakej padat, tempahan berlangkah, bar bawah telefon. */
+section[id],#pakej,#receipt{scroll-margin-top:64px}
+main section{padding-block:clamp(48px,6vw,80px)}
+
+/* hero lebih pendek supaya harga cepat kelihatan */
+.hero{padding-block:clamp(40px,6vw,80px)}
+.hero .btn svg{width:18px;height:18px;fill:currentColor}
+
+/* pencari servis */
+.finder{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:12px;margin-bottom:28px}
+.cat{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:6px;padding:16px 18px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);transition:border-color .15s,background .15s,transform .15s}
+.cat:hover{border-color:var(--amber);transform:translateY(-2px)}
+.cat:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.cat b{font-family:var(--display);font-weight:800;font-size:20px;line-height:1;text-transform:uppercase}
+.cat-from{font-size:13px;color:var(--muted)}
+.cat-from strong{font-family:var(--display);font-weight:900;font-size:24px;color:var(--ink);margin-left:2px}
+.cat-from small{font-size:12px;margin-left:2px}
+.cat-n{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber-ink)}
+.cat[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.cat[aria-pressed="true"] .cat-from,.cat[aria-pressed="true"] .cat-from strong{color:var(--paper)}
+.cat[aria-pressed="true"] .cat-n{color:var(--amber)}
+
+/* kad pakej */
+.pkg-top{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.pkg .pkg-top h3{font-size:28px}
+.pkg .price{font-size:clamp(32px,3vw,40px)}
+.inc-more{font-size:14px;margin-top:-4px}
+.inc-more summary{cursor:pointer;color:var(--amber-ink);font-weight:600;list-style:none}
+.inc-more summary::-webkit-details-marker{display:none}
+.inc-more summary::after{content:attr(data-more)}
+.inc-more[open] summary::after{content:attr(data-less)}
+.inc-more ul{margin-top:8px}
+.pkg-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.pkg .pkg-acts .btn{align-self:auto}
+.btn.ghost{border-color:var(--line)}
+.btn.wa svg{width:16px;height:16px;fill:currentColor}
+.price-note{margin-top:14px;font-size:13px;color:var(--muted)}
+
+/* tempahan berlangkah */
+.panel .step{border:0;margin:0 0 22px;padding:0}
+.panel legend,.step-add summary{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16px;padding:0;margin-bottom:14px}
+.panel legend i,.step-add summary i{font-style:normal;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--paper);font:700 13px var(--mono);flex:none}
+.step-add{margin:0 0 22px;border:1px dashed var(--line);border-radius:10px;padding:12px 14px}
+.step-add summary{cursor:pointer;margin:0;list-style:none}
+.step-add summary::-webkit-details-marker{display:none}
+.step-add summary::after{content:"+";margin-left:auto;font:600 20px var(--mono);color:var(--muted)}
+.step-add[open] summary::after{content:"−"}
+.step-add[open] summary{margin-bottom:14px}
+.step-add .n{background:var(--amber);color:var(--on-amber);border-radius:999px;font:700 12px var(--mono);padding:2px 8px}
+.check small.p{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:6px;white-space:nowrap}
+.panel input,.panel select,.panel textarea{font-size:16px}
+
+/* portfolio */
+.pf-show{display:flex;justify-content:center;margin:28px 0 0}
+
+/* kempen dilipat */
+.sc-more{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.sc-more>summary{cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-weight:700;border:1.5px solid var(--ink);border-radius:999px;padding:10px 18px;list-style:none}
+.sc-more>summary::-webkit-details-marker{display:none}
+.sc-more>summary::after{content:"↓"}
+.sc-more[open]>summary::after{content:"↑"}
+
+/* bar bawah telefon */
+.mbar{display:none}
+@media (max-width:900px){
+  body{padding-bottom:calc(66px + env(safe-area-inset-bottom,0px))}
+  .mbar{display:block;position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--paper) 94%,transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+  .mb-links{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px}
+  .mb-links a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:10px;text-decoration:none;font-size:11.5px;font-weight:600;color:var(--ink)}
+  .mb-links .ico{font:700 13px/18px var(--mono);height:18px}
+  .mb-links svg{width:18px;height:18px;fill:currentColor}
+  .mb-links .mb-book{background:var(--amber);color:var(--on-amber)}
+  .mb-links .mb-wa{color:#1f8f4e}
+  .mb-total{display:none;align-items:center;justify-content:space-between;gap:12px;padding:4px 6px}
+  .mb-total small{display:block;font-size:11px;color:var(--muted)}
+  .mb-total b{font-family:var(--display);font-weight:900;font-size:26px;line-height:1}
+  .mbar.in-quote .mb-links{display:none}
+  .mbar.in-quote .mb-total{display:flex}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))!important}
+}
+
+/* telefon */
+@media (max-width:760px){
+  .finder{display:flex;overflow-x:auto;scroll-snap-type:x proximity;gap:8px;margin:0 calc(-1*clamp(16px,4vw,40px)) 20px;padding:10px clamp(16px,4vw,40px);position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);z-index:15;background:var(--paper);border-bottom:1px solid var(--line);scrollbar-width:none}
+  .finder::-webkit-scrollbar{display:none}
+  .cat{flex:none;min-width:148px;scroll-snap-align:start;padding:12px 14px;gap:4px}
+  .cat b{font-size:18px}
+  .cat-from strong{font-size:20px}
+  .pkgs{grid-template-columns:1fr;gap:14px}
+  .pkg{padding:18px;gap:10px}
+  .pkg:hover{transform:none}
+  .pkg .pkg-top h3{font-size:24px}
+  .pkg-acts .btn{flex:1;justify-content:center}
+  .hero h1{font-size:clamp(40px,12vw,64px)}
+  .hero .strip{display:none}
+  .hero .ctas .btn{flex:1;justify-content:center;white-space:nowrap;padding-inline:14px}
+  .hero{padding-block:28px 36px}
+  .hero .lead{font-size:16px;margin-top:14px}
+  .pkg-top{flex-direction:row;flex-wrap:wrap;align-items:baseline;justify-content:space-between}
+  .sec-head{margin-bottom:20px}
+  h2{font-size:clamp(34px,10vw,48px)}
+  main section{padding-block:44px}
+}

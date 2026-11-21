@@ -161,9 +161,10 @@ function campSec(l){
       '<dl class="sc-meta"><div><dt>'+k.role+'</dt><dd>'+c.role[l]+'</dd></div><div><dt>'+k.period+'</dt><dd>'+c.period[l]+'</dd></div><div><dt>'+k.budget+'</dt><dd>'+c.budget+'</dd></div></dl>'+
       '<div class="sc-story"><div><h4>'+k.problem+'</h4><p>'+c.problem[l]+'</p></div><div><h4>'+k.strategy+'</h4><p>'+c.strategy[l]+'</p></div></div>'+
       '<div class="sc-kpi">'+c.results.map(function(r){return '<div><b>'+num(r,l)+'</b><span>'+r[l]+'</span></div>';}).join("")+'</div>'+
+      '<details class="sc-more"><summary>'+(l==="en"?"See the videos & TikTok data":"Lihat video & data TikTok")+'</summary>'+
       ttBlock(c.key,l)+
       '<h4 class="sc-sub">'+k.films+'</h4><div class="sc-grid h">'+c.yt.map(function(v){return ytCard(v,l);}).join("")+'</div>'+
-      '<h4 class="sc-sub">'+k.social+'</h4><div class="sc-grid v">'+c.tt.map(function(v){return mp4Card(v,l);}).join("")+'</div></article>';
+      '<h4 class="sc-sub">'+k.social+'</h4><div class="sc-grid v">'+c.tt.map(function(v){return mp4Card(v,l);}).join("")+'</div></details></article>';
     }).join("")+'</div></section>';
 }
 function ccSec(l){
@@ -182,7 +183,7 @@ function inject(){
     ["hasil","kempen","content-creator"].forEach(function(id){var e=document.getElementById(id); if(e)e.parentNode.removeChild(e);});
     var box=document.createElement("div"); box.innerHTML=resultsSec(l)+campSec(l)+ccSec(l);
     box.firstChild.dataset.l=l;
-    while(box.firstChild) pf.parentNode.insertBefore(box.firstChild,pf);
+    var after=pf.nextSibling; while(box.firstChild) pf.parentNode.insertBefore(box.firstChild,after);
   }
   var nav=document.querySelector("header nav.links");
   if(nav&&!nav.querySelector('a[href="#kempen"]')){
